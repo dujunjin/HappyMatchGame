@@ -252,4 +252,67 @@ public static class SpriteGenerator
         tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
+
+    /// <summary>
+    /// Treasure-chest body: a brown box with gold trim, a gold band near the
+    /// top, and a small gold lock in the center. Used by the win sequence.
+    /// </summary>
+    public static Sprite CreateChestBodySprite(int w = 80, int h = 56)
+    {
+        Texture2D tex = new Texture2D(w, h);
+        tex.filterMode = FilterMode.Bilinear;
+        Color body = new Color(0.55f, 0.34f, 0.20f);
+        Color dark = new Color(0.40f, 0.24f, 0.14f);
+        Color trim = new Color(1.00f, 0.83f, 0.30f);
+        int trimW = 3;
+        int bandTop = h - trimW - 2;
+        int bandBottom = h - trimW * 2 - 2;
+        int lockSize = 8;
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                bool onBorder = x < trimW || x >= w - trimW || y < trimW || y >= h - trimW;
+                bool onBand = y <= bandTop && y >= bandBottom;
+                bool onLock = Mathf.Abs(x - w / 2) < lockSize / 2 && Mathf.Abs(y - h / 2) < lockSize / 2;
+
+                Color c;
+                if (onBorder || onBand || onLock) c = trim;
+                else if (y < h / 2) c = dark;
+                else c = body;
+                tex.SetPixel(x, y, c);
+            }
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f));
+    }
+
+    /// <summary>
+    /// Treasure-chest lid: a brown piece with gold trim and a gold rim on the
+    /// bottom edge (where it meets the body). Slightly arched top. The lid is
+    /// parented to a hinge at its bottom-center so it can rotate open.
+    /// </summary>
+    public static Sprite CreateChestLidSprite(int w = 80, int h = 28)
+    {
+        Texture2D tex = new Texture2D(w, h);
+        tex.filterMode = FilterMode.Bilinear;
+        Color body = new Color(0.60f, 0.38f, 0.22f);
+        Color trim = new Color(1.00f, 0.83f, 0.30f);
+        int trimW = 3;
+
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                bool onBorder = x < trimW || x >= w - trimW || y < trimW || y >= h - trimW;
+                // Gold rim along the bottom edge.
+                bool onRim = y < trimW + 1;
+                Color c = (onBorder || onRim) ? trim : body;
+                tex.SetPixel(x, y, c);
+            }
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f));
+    }
 }
