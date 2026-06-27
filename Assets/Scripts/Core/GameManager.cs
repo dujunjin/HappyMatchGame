@@ -139,6 +139,10 @@ public class GameManager : MonoBehaviour
         }
         Audio.Init(audioCatalog);
 
+        // Phase F: F12 screenshot helper.
+        if (FindObjectOfType<ScreenshotCapture>() == null)
+            new GameObject("ScreenshotCapture").AddComponent<ScreenshotCapture>();
+
         // Wire dependencies
         matchDetector.Init(boardController);
         swapHandler.Init(boardController, this);

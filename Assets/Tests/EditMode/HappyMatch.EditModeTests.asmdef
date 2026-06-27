@@ -1,0 +1,19 @@
+{
+    "name": "HappyMatch.EditModeTests",
+    "rootNamespace": "",
+    "references": [
+        "Assembly-CSharp",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
