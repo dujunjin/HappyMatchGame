@@ -90,6 +90,7 @@ public class DeadBoardDetector
     public IEnumerator Shuffle(BoardController board, LevelConfig config, GameManager gameManager)
     {
         if (config == null) config = LevelConfig.Default;
+        gameManager?.Audio?.Play(AudioCatalog.Event.Shuffle);
 
         // Re-seed so the shuffle is deterministic per level (and different
         // from the initial layout's deterministic fill, since seed is reused).

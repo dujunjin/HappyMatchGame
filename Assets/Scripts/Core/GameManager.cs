@@ -45,6 +45,16 @@ public class GameManager : MonoBehaviour
     /// <summary>Special×special combos (rocket×rocket/bomb/propeller).</summary>
     public SpecialComboHandler comboHandler { get; private set; }
 
+    /// <summary>Phase E: pooled particle effects (clears + specials).</summary>
+    public VfxSystem Vfx { get; private set; }
+
+    /// <summary>Phase E: winter background + snow field.</summary>
+    public WinterBackground winterBackground { get; private set; }
+    public SnowField snowField { get; private set; }
+
+    /// <summary>Phase E: procedural SFX via 4 mix groups.</summary>
+    public AudioManager Audio { get; private set; }
+
     // Kept for callers that read state via GameManager; delegates to Flow.
     public GameState State => Flow != null ? Flow.State : GameState.Idle;
     public int RemainingSteps => Flow != null ? Flow.RemainingSteps : 0;
@@ -97,6 +107,33 @@ public class GameManager : MonoBehaviour
         boardPresenter = new BoardPresenter(
             this, swapHandler, cascadeManager, deadBoardDetector,
             boardController, Flow, levelConfig);
+
+        // Phase E: environment + particles (MonoBehaviours; created via AddComponent).
+        winterBackground = FindObjectOfType<WinterBackground>();
+        if (winterBackground == null)
+        {
+            winterBackground = new GameObject("WinterBackground").AddComponent<WinterBackground>();
+        }
+        Vfx = FindObjectOfType<VfxSystem>();
+        if (Vfx == null)
+        {
+            Vfx = new GameObject("VfxSystem").AddComponent<VfxSystem>();
+        }
+        Vfx.Init();
+        snowField = FindObjectOfType<SnowField>();
+        if (snowField == null)
+        {
+            snowField = new GameObject("SnowField").AddComponent<SnowField>();
+        }
+        snowField.Init();
+
+        // Phase E: audio.
+        Audio = FindObjectOfType<AudioManager>();
+        if (Audio == null)
+        {
+            Audio = new GameObject("AudioManager").AddComponent<AudioManager>();
+        }
+        Audio.Init(audioCatalog);
 
         // Wire dependencies
         matchDetector.Init(boardController);

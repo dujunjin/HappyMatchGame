@@ -55,6 +55,8 @@ public class WinSequence : MonoBehaviour
 
     private IEnumerator Finale()
     {
+        // Phase E: win fanfare.
+        _gm.Audio?.Play(AudioCatalog.Event.Win);
         ShowGreatText();
         BrightenBackground();
         yield return new WaitForSeconds(0.24f);

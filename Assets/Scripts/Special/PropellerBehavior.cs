@@ -116,7 +116,16 @@ public class PropellerBehavior : MonoBehaviour
         float arcHeight = 0.6f + distance * 0.25f;
         Vector3 control = new Vector3(mid.x, mid.y + arcHeight, mid.z);
 
+        // Phase E: propeller fly SFX during flight.
+        _gameManager.Audio?.Play(AudioCatalog.Event.PropellerFly);
+
         yield return FlyArc(start, control, targetPos, flightDuration);
+
+        // Phase E: propeller fly SFX plays during flight (started at takeoff).
+        // Phase E: starburst at the impact point + hit SFX.
+        if (_gameManager.Vfx != null)
+            _gameManager.Vfx.SpawnPropellerHit(targetPos);
+        _gameManager.Audio?.Play(AudioCatalog.Event.PropellerHit);
 
         // Impact: clear target + 4-neighbors, count suitcases.
         var clearCells = new List<(int, int)> { (targetRow, targetCol) };
@@ -160,6 +169,7 @@ public class PropellerBehavior : MonoBehaviour
     private IEnumerator FlyArc(Vector3 p0, Vector3 p1, Vector3 p2, float duration)
     {
         float elapsed = 0f;
+        float trailAccum = 0f;
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
@@ -171,6 +181,14 @@ public class PropellerBehavior : MonoBehaviour
             // Keep spinning during flight.
             _idleSpin += Time.deltaTime * 540f;
             transform.rotation = Quaternion.Euler(0f, 0f, -_idleSpin);
+
+            // Phase E: drop a short gold trail particle every ~0.04s.
+            trailAccum += Time.deltaTime;
+            if (trailAccum >= 0.04f && _gameManager != null && _gameManager.Vfx != null)
+            {
+                trailAccum = 0f;
+                _gameManager.Vfx.SpawnPropellerTrail(pos);
+            }
             yield return null;
         }
         transform.position = p2;

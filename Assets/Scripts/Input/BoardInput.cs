@@ -76,6 +76,7 @@ public class BoardInput : MonoBehaviour
         {
             _selectedCell = cell;
             _gameManager.SetState(GameState.Selecting);
+            _gameManager.Audio?.Play(AudioCatalog.Event.UiClick);
             HighlightCell(cell.row, cell.col, true);
         }
         else

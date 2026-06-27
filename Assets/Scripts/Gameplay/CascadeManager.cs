@@ -126,6 +126,25 @@ public class CascadeManager
     {
         float baseDuration = GameConfig.ClearDuration;
 
+        // Phase E: spawn a colored clear burst (shards + star + ring) at each
+        // cleared cell so the match reads with impact.
+        if (_gameManager.Vfx != null)
+        {
+            foreach (var (row, col) in cells)
+            {
+                var cell = _board.Cells[row, col];
+                Color c = ColorForType(cell.elementType);
+                _gameManager.Vfx.SpawnClearBurst(_board.GetWorldPosition(row, col), c);
+            }
+        }
+
+        // Phase E: clear SFX, pitch rises with cascade iteration.
+        if (_gameManager.Audio != null)
+        {
+            float pitch = 1f + iteration * 0.12f;
+            _gameManager.Audio.Play(AudioCatalog.Event.MatchClear, pitch);
+        }
+
         // Collect renderers so all cells fade/shrink in parallel (not one
         // after another). GameObjects are destroyed later by DestroyCell.
         var items = new List<(SpriteRenderer sr, Transform tr)>();
@@ -210,5 +229,19 @@ public class CascadeManager
 
         // All new elements fall in together.
         yield return AnimationHelper.TweenPositions(movers, GameConfig.FallDuration);
+    }
+
+    /// <summary>Element type -> procedural clear-burst color (mirrors GameConfig).</summary>
+    private static Color ColorForType(ElementType type)
+    {
+        switch (type)
+        {
+            case ElementType.Red: return GameConfig.ElementColor_Red;
+            case ElementType.Blue: return GameConfig.ElementColor_Blue;
+            case ElementType.Yellow: return GameConfig.ElementColor_Yellow;
+            case ElementType.Green: return GameConfig.ElementColor_Green;
+            case ElementType.Suitcase: return GameConfig.ElementColor_Suitcase;
+            default: return Color.white;
+        }
     }
 }

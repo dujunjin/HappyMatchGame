@@ -36,6 +36,9 @@ public class VisualTheme : ScriptableObject
     private readonly Dictionary<Color, Sprite> _rocketCache = new Dictionary<Color, Sprite>();
     private readonly Dictionary<Color, Sprite> _bombCache = new Dictionary<Color, Sprite>();
     private readonly Dictionary<Color, Sprite> _propellerCache = new Dictionary<Color, Sprite>();
+    // Phase E: distinct outline per element (hat/snowflake/star/tree), cached
+    // per type so repeated requests don't regenerate the texture.
+    private Sprite _redShape, _blueShape, _yellowShape, _greenShape;
 
     private static VisualTheme _default;
 
@@ -64,18 +67,25 @@ public class VisualTheme : ScriptableObject
 
     /// <summary>
     /// Resolve the sprite for a normal element or suitcase, using an override
-    /// if provided, otherwise a cached procedural SpriteGenerator sprite.
+    /// if provided, otherwise a cached procedural sprite. Phase E gives each
+    /// normal element a distinct outline (hat/snowflake/star/tree).
     /// </summary>
     public Sprite GetElementSprite(ElementType type)
     {
         switch (type)
         {
-            case ElementType.Red:        return spriteRed      ?? GetCachedCircle(colorRed);
-            case ElementType.Blue:       return spriteBlue     ?? GetCachedCircle(colorBlue);
-            case ElementType.Yellow:     return spriteYellow   ?? GetCachedCircle(colorYellow);
-            case ElementType.Green:      return spriteGreen    ?? GetCachedCircle(colorGreen);
-            case ElementType.Suitcase:   return spriteSuitcase ?? (_suitcaseCache ?? (_suitcaseCache = SpriteGenerator.CreateSuitcaseSprite(colorSuitcase)));
-            default:                     return GetCachedCircle(Color.white);
+            case ElementType.Red:
+                return spriteRed ?? (_redShape ?? (_redShape = SpriteGenerator.CreateHatSprite(colorRed)));
+            case ElementType.Blue:
+                return spriteBlue ?? (_blueShape ?? (_blueShape = SpriteGenerator.CreateSnowflakeSprite(colorBlue)));
+            case ElementType.Yellow:
+                return spriteYellow ?? (_yellowShape ?? (_yellowShape = SpriteGenerator.CreateStarSprite(colorYellow)));
+            case ElementType.Green:
+                return spriteGreen ?? (_greenShape ?? (_greenShape = SpriteGenerator.CreateTreeSprite(colorGreen)));
+            case ElementType.Suitcase:
+                return spriteSuitcase ?? (_suitcaseCache ?? (_suitcaseCache = SpriteGenerator.CreateSuitcaseSprite(colorSuitcase)));
+            default:
+                return GetCachedCircle(Color.white);
         }
     }
 

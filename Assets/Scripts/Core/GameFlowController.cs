@@ -109,6 +109,7 @@ public class GameFlowController
     public void TriggerLose()
     {
         SetState(GameState.GameOver);
+        _gm?.Audio?.Play(AudioCatalog.Event.Lose);
         _gm?.ShowResult(false);
     }
 }

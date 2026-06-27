@@ -51,6 +51,9 @@ public class TargetPresentation
         // Logical decrement immediately (sets WinPending if the goal is met).
         _flow.DecreaseSuitcase(count);
 
+        // Phase E: suitcase break SFX.
+        _gameManager.Audio?.Play(AudioCatalog.Event.SuitcaseHit);
+
         foreach (var (row, col) in cells)
         {
             if (!Helper.IsInBounds(row, col, _board.Rows, _board.Cols)) continue;
@@ -124,6 +127,10 @@ public class TargetPresentation
         // --- Arrive ---
         Object.Destroy(go);
         if (_gameManager.gameUI != null) _gameManager.gameUI.BounceTarget();
+
+        // Phase E: collect chime + target-bounce pop.
+        _gameManager.Audio?.Play(AudioCatalog.Event.SuitcaseCollect);
+        _gameManager.Audio?.Play(AudioCatalog.Event.TargetBounce);
 
         flyingCount = flyingCount > 0 ? flyingCount - 1 : 0;
         displayCount = displayCount > 0 ? displayCount - 1 : 0;

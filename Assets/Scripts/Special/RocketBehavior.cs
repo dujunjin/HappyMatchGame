@@ -44,6 +44,7 @@ public class RocketBehavior : MonoBehaviour
     {
         _activated = true;
         _gameManager.SetState(GameState.Clearing);
+        _gameManager.Audio?.Play(AudioCatalog.Event.RocketActivate);
 
         // Resolve the current grid position from the transform, since gravity
         // may have moved this item after it was created.
@@ -76,6 +77,26 @@ public class RocketBehavior : MonoBehaviour
         {
             for (int r = 0; r < _board.Rows; r++)
                 toClear.Add((r, col));
+        }
+
+        // Phase E: directional beam + tail along the cleared line.
+        if (_gameManager.Vfx != null)
+        {
+            Vector3 from = _dir == GameConfig.RocketDir.Horizontal
+                ? _board.GetWorldPosition(row, 0)
+                : _board.GetWorldPosition(0, col);
+            Vector3 to = _dir == GameConfig.RocketDir.Horizontal
+                ? _board.GetWorldPosition(row, _board.Cols - 1)
+                : _board.GetWorldPosition(_board.Rows - 1, col);
+            Color rc = _elementType switch
+            {
+                ElementType.Red => GameConfig.ElementColor_Red,
+                ElementType.Blue => GameConfig.ElementColor_Blue,
+                ElementType.Yellow => GameConfig.ElementColor_Yellow,
+                ElementType.Green => GameConfig.ElementColor_Green,
+                _ => Color.white,
+            };
+            _gameManager.Vfx.SpawnRocketTrail(from, to, rc);
         }
 
         // Check suitcases adjacent to cleared cells

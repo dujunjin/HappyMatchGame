@@ -147,11 +147,13 @@ public class SwapHandler
             if (go2 != null)
                 yield return AnimationHelper.TweenPosition(go2.transform, go2.transform.position, pos2, GameConfig.SwapDuration);
 
+            _gameManager.Audio?.Play(AudioCatalog.Event.SwapInvalid);
             _gameManager.SetState(GameState.Idle);
             yield break;
         }
 
         // Valid swap
+        _gameManager.Audio?.Play(AudioCatalog.Event.Swap);
         _gameManager.DecreaseStep();
         _gameManager.SetState(GameState.Idle);
     }

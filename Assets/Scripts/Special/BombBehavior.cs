@@ -40,6 +40,7 @@ public class BombBehavior : MonoBehaviour
     {
         _activated = true;
         _gameManager.SetState(GameState.Clearing);
+        _gameManager.Audio?.Play(AudioCatalog.Event.BombActivate);
 
         // Resolve the current grid position from the transform, since gravity
         // may have moved this item after it was created.
@@ -72,6 +73,10 @@ public class BombBehavior : MonoBehaviour
                     toClear.Add((r, c));
             }
         }
+
+        // Phase E: shock ring + sparks + screen shake at the blast center.
+        if (_gameManager.Vfx != null)
+            _gameManager.Vfx.SpawnBombBlast(_board.GetWorldPosition(row, col));
 
         // Check suitcases
         _gameManager.suitcaseManager.CheckAdjacentSuitcases(toClear);
