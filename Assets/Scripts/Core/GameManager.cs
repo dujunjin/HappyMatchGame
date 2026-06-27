@@ -3,11 +3,21 @@ using System.Collections;
 using System.Collections.Generic;
 
 /// <summary>
-/// Central game manager - state machine driving the match-3 game loop.
+/// Central game manager - thin orchestrator that assembles systems in Start
+/// and delegates state/step/suitcase logic to GameFlowController, board
+/// presentation to BoardPresenter, and target counting to
+/// TargetPresentation. Visual/audio assets are sourced from VisualTheme /
+/// AudioCatalog ScriptableObject containers (programmatic defaults work with
+/// zero imported art).
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
+
+    [Header("Level / Theme (leave null for programmatic defaults)")]
+    public LevelConfig levelConfig;
+    public VisualTheme visualTheme;
+    public AudioCatalog audioCatalog;
 
     [Header("Systems")]
     public BoardController boardController;
@@ -20,12 +30,24 @@ public class GameManager : MonoBehaviour
     public BoardInput boardInput;
     public GameUI gameUI;
 
-    public GameState State { get; private set; } = GameState.Idle;
-    public int RemainingSuitcases { get; private set; }
-    public int RemainingSteps { get; private set; }
+    /// <summary>State machine + step/suitcase authority. Delegated from here.</summary>
+    public GameFlowController Flow { get; private set; }
 
-    private Dictionary<Color, Sprite> _elementSprites = new Dictionary<Color, Sprite>();
-    private Dictionary<(Color, string), Sprite> _specialSprites = new Dictionary<(Color, string), Sprite>();
+    /// <summary>Animation/cascade wrapper + dead-board shuffle hook.</summary>
+    public BoardPresenter boardPresenter { get; private set; }
+
+    /// <summary>Suitcase-clear routing stub (Phase C will animate flyers).</summary>
+    public TargetPresentation targetPresentation { get; private set; }
+
+    /// <summary>Dead-board detection + shuffle.</summary>
+    public DeadBoardDetector deadBoardDetector { get; private set; }
+
+    // Kept for callers that read state via GameManager; delegates to Flow.
+    public GameState State => Flow != null ? Flow.State : GameState.Idle;
+    public int RemainingSteps => Flow != null ? Flow.RemainingSteps : 0;
+    public int RemainingSuitcases => Flow != null ? Flow.RemainingSuitcases : 0;
+
+    private VisualTheme _theme;
 
     private void Awake()
     {
@@ -35,18 +57,27 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // Constructed early so the State/Remaining accessors above never
+        // null-ref before Start runs. Init (config + UI) happens in Start.
+        Flow = new GameFlowController();
     }
 
     private void Start()
     {
-        // Generate sprites
-        GenerateSprites();
+        // Resolve config + theme (fall back to programmatic defaults).
+        if (levelConfig == null) levelConfig = LevelConfig.Default;
+        _theme = visualTheme != null ? visualTheme : VisualTheme.Default;
+        // AudioCatalog is built now but not actually played until Phase E.
+        if (audioCatalog == null) audioCatalog = AudioCatalog.Default;
 
-        // Initialize systems
+        // Board: generate the deterministic layout, then instantiate it.
         boardController = FindOrCreateBoardController();
         boardController.gameManager = this;
-        // Populate the board now (before placing suitcases) so cells exist.
-        boardController.InitializeBoard();
+        CellData[,] grid = BoardGenerator.Generate(levelConfig);
+        boardController.InitializeBoard(grid);
+
+        // Systems
         matchDetector = new MatchDetector();
         swapHandler = new SwapHandler();
         gravitySystem = new GravitySystem();
@@ -56,6 +87,13 @@ public class GameManager : MonoBehaviour
         boardInput = FindOrCreateBoardInput();
         gameUI = FindOrCreate<GameUI>("GameUI");
 
+        // Presentation layer
+        targetPresentation = new TargetPresentation();
+        deadBoardDetector = new DeadBoardDetector(matchDetector, this);
+        boardPresenter = new BoardPresenter(
+            this, swapHandler, cascadeManager, deadBoardDetector,
+            boardController, Flow, levelConfig);
+
         // Wire dependencies
         matchDetector.Init(boardController);
         swapHandler.Init(boardController, this);
@@ -63,100 +101,26 @@ public class GameManager : MonoBehaviour
         cascadeManager.Init(boardController, matchDetector, swapHandler, gravitySystem, specialFactory, this);
         specialFactory.Init(boardController, this);
         suitcaseManager.Init(boardController);
+        targetPresentation.Init(this, Flow);
         boardInput.Init(boardController, swapHandler, this);
         gameUI.Init(this);
 
-        // Start game
-        RemainingSuitcases = GameConfig.InitialSuitcaseCount;
-        RemainingSteps = GameConfig.MaxSteps;
-        gameUI.UpdateTopBar(RemainingSuitcases, RemainingSteps);
-
-        // Place initial suitcases
-        suitcaseManager.PlaceInitialSuitcases();
+        // Initialize flow (counters + UI). Layout already carries suitcases,
+        // so SuitcaseManager.PlaceInitialSuitcases() is intentionally skipped.
+        Flow.Init(levelConfig, gameUI);
 
         SetState(GameState.Idle);
     }
 
-    private void GenerateSprites()
-    {
-        _elementSprites[GameConfig.ElementColor_Red] = SpriteGenerator.CreateCircleSprite(GameConfig.ElementColor_Red);
-        _elementSprites[GameConfig.ElementColor_Blue] = SpriteGenerator.CreateCircleSprite(GameConfig.ElementColor_Blue);
-        _elementSprites[GameConfig.ElementColor_Yellow] = SpriteGenerator.CreateCircleSprite(GameConfig.ElementColor_Yellow);
-        _elementSprites[GameConfig.ElementColor_Green] = SpriteGenerator.CreateCircleSprite(GameConfig.ElementColor_Green);
-        _elementSprites[GameConfig.ElementColor_Suitcase] = SpriteGenerator.CreateSuitcaseSprite(GameConfig.ElementColor_Suitcase);
-
-        _specialSprites[(GameConfig.ElementColor_Red, "rocket")] = SpriteGenerator.CreateRocketSprite(GameConfig.ElementColor_Red);
-        _specialSprites[(GameConfig.ElementColor_Blue, "rocket")] = SpriteGenerator.CreateRocketSprite(GameConfig.ElementColor_Blue);
-        _specialSprites[(GameConfig.ElementColor_Yellow, "rocket")] = SpriteGenerator.CreateRocketSprite(GameConfig.ElementColor_Yellow);
-        _specialSprites[(GameConfig.ElementColor_Green, "rocket")] = SpriteGenerator.CreateRocketSprite(GameConfig.ElementColor_Green);
-        _specialSprites[(GameConfig.ElementColor_Red, "bomb")] = SpriteGenerator.CreateBombSprite(GameConfig.ElementColor_Red);
-        _specialSprites[(GameConfig.ElementColor_Blue, "bomb")] = SpriteGenerator.CreateBombSprite(GameConfig.ElementColor_Blue);
-        _specialSprites[(GameConfig.ElementColor_Yellow, "bomb")] = SpriteGenerator.CreateBombSprite(GameConfig.ElementColor_Yellow);
-        _specialSprites[(GameConfig.ElementColor_Green, "bomb")] = SpriteGenerator.CreateBombSprite(GameConfig.ElementColor_Green);
-    }
-
     public Sprite GetSpriteForType(ElementType type, GameConfig.SpecialType special = GameConfig.SpecialType.None, GameConfig.RocketDir rocketDir = GameConfig.RocketDir.Horizontal)
     {
-        if (type == ElementType.Suitcase)
-            return _elementSprites[GameConfig.ElementColor_Suitcase];
-
-        if (special == GameConfig.SpecialType.Rocket)
-        {
-            var key = (GetColorForType(type), "rocket");
-            if (_specialSprites.ContainsKey(key))
-                return _specialSprites[key];
-        }
-
-        if (special == GameConfig.SpecialType.Bomb)
-        {
-            var key = (GetColorForType(type), "bomb");
-            if (_specialSprites.ContainsKey(key))
-                return _specialSprites[key];
-        }
-
-        return _elementSprites[GetColorForType(type)];
+        return _theme.GetSpriteForType(type, special, rocketDir);
     }
 
-    private Color GetColorForType(ElementType type)
-    {
-        return type switch
-        {
-            ElementType.Red => GameConfig.ElementColor_Red,
-            ElementType.Blue => GameConfig.ElementColor_Blue,
-            ElementType.Yellow => GameConfig.ElementColor_Yellow,
-            ElementType.Green => GameConfig.ElementColor_Green,
-            _ => Color.white
-        };
-    }
-
-    public void SetState(GameState newState)
-    {
-        State = newState;
-    }
-
-    public void DecreaseStep()
-    {
-        RemainingSteps--;
-        gameUI.UpdateTopBar(RemainingSuitcases, RemainingSteps);
-
-        if (RemainingSteps <= 0 && RemainingSuitcases > 0)
-        {
-            SetState(GameState.GameOver);
-            gameUI.ShowResult(false);
-        }
-    }
-
-    public void DecreaseSuitcase(int count = 1)
-    {
-        RemainingSuitcases = Mathf.Max(0, RemainingSuitcases - count);
-        gameUI.UpdateTopBar(RemainingSuitcases, RemainingSteps);
-
-        if (RemainingSuitcases <= 0)
-        {
-            SetState(GameState.GameOver);
-            gameUI.ShowResult(true);
-        }
-    }
+    // Delegated state/counter APIs (callers continue to use GameManager).
+    public void SetState(GameState newState) => Flow.SetState(newState);
+    public void DecreaseStep() => Flow.DecreaseStep();
+    public void DecreaseSuitcase(int count = 1) => Flow.DecreaseSuitcase(count);
 
     private BoardController FindOrCreateBoardController()
     {

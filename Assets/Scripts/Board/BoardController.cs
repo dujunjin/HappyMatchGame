@@ -33,24 +33,41 @@ public class BoardController : MonoBehaviour
         _cells = new CellData[_rows, _cols];
 
         // Center the board in the camera view so all rows/cols are visible.
+        // (Recomputed in InitializeBoard once the real grid dimensions land.)
+        boardOrigin = ComputeBoardOrigin(_rows, _cols);
+    }
+
+    private Vector3 ComputeBoardOrigin(int rows, int cols)
+    {
         float spacing = cellSize + cellGap;
-        boardOrigin = new Vector3(
-            -(_cols - 1) * spacing * 0.5f,
-            (_rows - 1) * spacing * 0.5f,
+        return new Vector3(
+            -(cols - 1) * spacing * 0.5f,
+            (rows - 1) * spacing * 0.5f,
             0f
         );
     }
 
-    // NOTE: InitializeBoard() is called explicitly by GameManager.Start()
-    // (not from Unity's Start()) so that suitcases are placed AFTER the board
-    // is populated. BoardController is created at runtime via AddComponent,
-    // so its Start() would otherwise run next frame — after PlaceInitialSuitcases.
+    // NOTE: InitializeBoard(grid) is called explicitly by GameManager.Start()
+    // (not from Unity's Start()) so that suitcases are already in the grid
+    // (placed by BoardGenerator per LevelConfig) before any GameObjects are
+    // instantiated. BoardController is created at runtime via AddComponent,
+    // so its Start() would otherwise run next frame.
 
     /// <summary>
-    /// Initialize the board with random elements, avoiding initial matches.
+    /// Initialize the board from an externally-generated layout (produced by
+    /// BoardGenerator from a LevelConfig). Dimensions are taken from the grid;
+    /// boardOrigin is recomputed so non-default sizes stay centered. Empty
+    /// cells are skipped (no GameObject created).
     /// </summary>
-    public void InitializeBoard()
+    public void InitializeBoard(CellData[,] grid)
     {
+        if (grid == null) return;
+
+        _rows = grid.GetLength(0);
+        _cols = grid.GetLength(1);
+        _cells = new CellData[_rows, _cols];
+        boardOrigin = ComputeBoardOrigin(_rows, _cols);
+
         _boardRoot = new GameObject("BoardRoot");
         _boardRoot.transform.SetParent(transform);
 
@@ -58,32 +75,11 @@ public class BoardController : MonoBehaviour
         {
             for (int col = 0; col < _cols; col++)
             {
-                ElementType type;
-                do
-                {
-                    type = GameConfig.NormalElements[Random.Range(0, GameConfig.NormalElements.Length)];
-                } while (WouldMatch(row, col, type));
-
+                ElementType type = grid[row, col].elementType;
+                if (type == ElementType.Empty) continue;
                 CreateCell(row, col, type);
             }
         }
-    }
-
-    private bool WouldMatch(int row, int col, ElementType type)
-    {
-        // Check horizontal (left 2)
-        if (col >= 2 &&
-            _cells[row, col - 1].elementType == type &&
-            _cells[row, col - 2].elementType == type)
-            return true;
-
-        // Check vertical (up 2)
-        if (row >= 2 &&
-            _cells[row - 1, col].elementType == type &&
-            _cells[row - 2, col].elementType == type)
-            return true;
-
-        return false;
     }
 
     private void CreateCell(int row, int col, ElementType type)

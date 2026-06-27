@@ -128,24 +128,48 @@ public class MatchDetector
 
     /// <summary>
     /// Check if a swap at (r1,c1) and (r2,c2) would produce any matches.
+    ///
+    /// Semantics (used by DeadBoardDetector): temporarily swap the two cells'
+    /// data, run FindAllMatches against that swapped state, then restore the
+    /// original data so the board is left untouched. Detection is performed
+    /// on the POST-swap state — which is exactly what a player-initiated swap
+    /// would leave on the board.
+    ///
+    /// NOTE: callers that have already swapped the board's cell data (e.g.
+    /// SwapHandler.SwapAndValidate) must NOT call this — it performs its own
+    /// internal swap/restore and would otherwise detect against the wrong
+    /// state. SwapHandler checks FindAllMatches directly for that reason.
     /// </summary>
     public bool WouldSwapProduceMatch(int r1, int c1, int r2, int c2)
     {
-        // Temporarily swap
-        var tempType = _board.Cells[r1, c1].elementType;
-        var tempSpecial = _board.Cells[r1, c1].specialType;
-        _board.Cells[r1, c1].elementType = _board.Cells[r2, c2].elementType;
-        _board.Cells[r1, c1].specialType = _board.Cells[r2, c2].specialType;
-        _board.Cells[r2, c2].elementType = tempType;
-        _board.Cells[r2, c2].specialType = tempSpecial;
+        // Snapshot originals (elementType + specialType + rocketDir so the
+        // restore is a full round-trip even if future match logic consults
+        // the rocket direction).
+        ElementType typeA = _board.Cells[r1, c1].elementType;
+        GameConfig.SpecialType specA = _board.Cells[r1, c1].specialType;
+        GameConfig.RocketDir dirA = _board.Cells[r1, c1].rocketDir;
+
+        ElementType typeB = _board.Cells[r2, c2].elementType;
+        GameConfig.SpecialType specB = _board.Cells[r2, c2].specialType;
+        GameConfig.RocketDir dirB = _board.Cells[r2, c2].rocketDir;
+
+        // Apply the swap.
+        _board.Cells[r1, c1].elementType = typeB;
+        _board.Cells[r1, c1].specialType = specB;
+        _board.Cells[r1, c1].rocketDir = dirB;
+        _board.Cells[r2, c2].elementType = typeA;
+        _board.Cells[r2, c2].specialType = specA;
+        _board.Cells[r2, c2].rocketDir = dirA;
 
         bool hasMatch = FindAllMatches().Count > 0;
 
-        // Swap back
-        _board.Cells[r2, c2].elementType = _board.Cells[r1, c1].elementType;
-        _board.Cells[r2, c2].specialType = _board.Cells[r1, c1].specialType;
-        _board.Cells[r1, c1].elementType = tempType;
-        _board.Cells[r1, c1].specialType = tempSpecial;
+        // Restore originals (independent of detection result).
+        _board.Cells[r1, c1].elementType = typeA;
+        _board.Cells[r1, c1].specialType = specA;
+        _board.Cells[r1, c1].rocketDir = dirA;
+        _board.Cells[r2, c2].elementType = typeB;
+        _board.Cells[r2, c2].specialType = specB;
+        _board.Cells[r2, c2].rocketDir = dirB;
 
         return hasMatch;
     }

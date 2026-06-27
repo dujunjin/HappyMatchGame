@@ -99,10 +99,12 @@ public class SuitcaseManager
             _board.DestroyCell(row, col);
         }
 
-        // Update count
-        if (toClear.Count > 0 && GameManager.Instance != null)
+        // Route the decrement through TargetPresentation so Phase C can
+        // intercept the clear event (flyers / target-bar bounce) without
+        // touching SuitcaseManager or the specials that call into it.
+        if (toClear.Count > 0 && GameManager.Instance != null && GameManager.Instance.targetPresentation != null)
         {
-            GameManager.Instance.DecreaseSuitcase(toClear.Count);
+            GameManager.Instance.targetPresentation.OnSuitcaseHit(toClear.Count, new List<(int, int)>(toClear));
         }
     }
 

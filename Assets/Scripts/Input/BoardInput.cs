@@ -22,10 +22,12 @@ public class BoardInput : MonoBehaviour
     private void Update()
     {
         if (_gameManager == null || _swapHandler == null) return;
+        if (_gameManager.Flow == null) return;
 
-        // Ignore input during animations
-        GameState state = _gameManager.State;
-        if (state != GameState.Idle && state != GameState.Selecting)
+        // Input gate: only during Idle/Selecting. Delegated to FlowController
+        // so animation states (Swapping/Clearing/Falling/Refilling/GameOver)
+        // uniformly reject ordinary input.
+        if (!_gameManager.Flow.CanAcceptInput)
             return;
 
         if (Input.GetMouseButtonDown(0))
@@ -144,7 +146,7 @@ public class BoardInput : MonoBehaviour
             HighlightCell(_selectedCell.Value.row, _selectedCell.Value.col, false);
             _selectedCell = null;
         }
-        if (_gameManager.State == GameState.Selecting)
+        if (_gameManager.Flow != null && _gameManager.Flow.State == GameState.Selecting)
             _gameManager.SetState(GameState.Idle);
     }
 
@@ -165,13 +167,12 @@ public class BoardInput : MonoBehaviour
 
     private IEnumerator ExecuteSwap(int r1, int c1, int r2, int c2)
     {
-        yield return _swapHandler.SwapAndValidate(r1, c1, r2, c2);
-
-        // After swap, state is Idle (valid) or Idle (invalid swapped back)
-        if (_gameManager.State != GameState.Idle)
-            _gameManager.SetState(GameState.Idle);
-
-        // Run cascade (will be empty if no matches, which is fine)
-        yield return _gameManager.cascadeManager.RunCascade();
+        // Route the whole swap+cascade+dead-board-check through the presenter
+        // so future phases can hook particles/sfx and the shuffle runs after
+        // every cascade settles.
+        if (_gameManager.boardPresenter != null)
+            yield return _gameManager.boardPresenter.PresentSwap(r1, c1, r2, c2);
+        else
+            yield return _gameManager.cascadeManager.RunCascade();
     }
 }

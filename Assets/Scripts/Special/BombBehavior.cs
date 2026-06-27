@@ -27,8 +27,9 @@ public class BombBehavior : MonoBehaviour
     private void OnMouseDown()
     {
         if (_activated) return;
-        GameState state = _gameManager.State;
-        if (state != GameState.Idle && state != GameState.Selecting && state != GameState.Clearing)
+        // Input gate for specials: allow activation during Idle/Selecting/
+        // Clearing (bombs can chain mid-cascade). Routed through FlowController.
+        if (_gameManager.Flow == null || !_gameManager.Flow.CanActivateSpecial)
             return;
         StartCoroutine(Activate());
     }
@@ -92,9 +93,12 @@ public class BombBehavior : MonoBehaviour
         // Shrink out.
         yield return AnimationHelper.TweenScale(transform, Vector3.one, Vector3.zero, 0.15f);
 
-        // Start the cascade on the GameManager so it survives this gameObject
-        // being destroyed (the bomb's own coroutine would otherwise die with it).
-        _gameManager.StartCoroutine(_gameManager.cascadeManager.RunCascade());
+        // Start the cascade via the presenter so the dead-board check (and
+        // future presentation hooks) runs after the bomb's blast clears.
+        if (_gameManager.boardPresenter != null)
+            _gameManager.StartCoroutine(_gameManager.boardPresenter.PresentCascade());
+        else
+            _gameManager.StartCoroutine(_gameManager.cascadeManager.RunCascade());
         Object.Destroy(gameObject);
     }
 }
