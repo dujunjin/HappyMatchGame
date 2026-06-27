@@ -140,6 +140,9 @@ public class GameManager : MonoBehaviour
 
     public void ShowResult(bool won) => gameUI?.ShowResult(won);
 
+    /// <summary>Play the Phase D win sequence (replaces the plain win dialog).</summary>
+    public void PlayWinSequence() => gameUI?.PlayWinSequence(this);
+
     /// <summary>
     /// Called by BoardPresenter after a cascade with no in-flight flyers, and
     /// by TargetPresentation when the last flyer lands. Resolves the pending

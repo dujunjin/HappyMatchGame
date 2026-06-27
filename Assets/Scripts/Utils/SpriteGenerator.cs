@@ -201,4 +201,55 @@ public static class SpriteGenerator
 
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
+
+    /// <summary>
+    /// A solid square sprite (used for confetti / debris). Full alpha inside
+    /// the rect, transparent outside.
+    /// </summary>
+    public static Sprite CreateSquareSprite(Color color, int size = 16)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+                tex.SetPixel(x, y, color);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
+
+    /// <summary>
+    /// A white starburst: rays radiating from the center, fading with
+    /// distance. Used behind the big suitcase in the win sequence.
+    /// </summary>
+    public static Sprite CreateStarburstSprite(int size = 128, int rays = 12)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+        Vector2 center = new Vector2(size / 2f, size / 2f);
+        float maxDist = size * 0.5f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new Vector2(x, y);
+                Vector2 d = p - center;
+                float dist = d.magnitude;
+                float angle = Mathf.Atan2(d.y, d.x);
+
+                // Ray brightness: peaks at angles aligned to ray directions.
+                float rayPhase = (angle * rays / (2f * Mathf.PI)) % 1f;
+                if (rayPhase < 0f) rayPhase += 1f;
+                // Sharp rays: brightness falls off quickly away from a ray axis.
+                float ray = 1f - Mathf.Min(rayPhase, 1f - rayPhase) * rays;
+                ray = Mathf.Clamp01(ray);
+
+                float falloff = 1f - (dist / maxDist);
+                float alpha = Mathf.Clamp01(falloff * 0.85f) * Mathf.Clamp01(ray);
+                tex.SetPixel(x, y, new Color(1f, 0.97f, 0.85f, alpha));
+            }
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
 }

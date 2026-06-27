@@ -101,7 +101,9 @@ public class GameFlowController
     public void TriggerWin()
     {
         SetState(GameState.GameOver);
-        _gm?.ShowResult(true);
+        // Phase D win sequence (board exit / Great / big suitcase / buttons).
+        // Lose still uses the simple ResultDialog.
+        _gm?.PlayWinSequence();
     }
 
     public void TriggerLose()

@@ -36,6 +36,19 @@ public class GameUI : MonoBehaviour
         _resultDialog?.Show(won);
     }
 
+    /// <summary>
+    /// Kick off the Phase D win sequence (board exit, "Great" text, big
+    /// suitcase burst, retry/replay buttons). Called by GameManager when the
+    /// victory barrier resolves. Lose still goes through ShowResult(false).
+    /// </summary>
+    public void PlayWinSequence(GameManager gm)
+    {
+        GameObject go = new GameObject("WinSequence");
+        WinSequence ws = go.AddComponent<WinSequence>();
+        ws.Init(gm);
+        ws.Play();
+    }
+
     /// <summary>World position of the target icon (flyer destination).</summary>
     public UnityEngine.Vector3 GetTargetWorldPosition()
     {
