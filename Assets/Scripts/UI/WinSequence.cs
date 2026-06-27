@@ -205,84 +205,110 @@ public class WinSequence : MonoBehaviour
         body.transform.localPosition = new Vector3(0f, -0.28f, 0f);
         _chestBody = body.transform;
 
-        // Lid hinge at the top seam of the body.
+        // Lid hinge at the BACK edge of the seam (right-top corner of the body,
+        // = the lid's back-bottom corner). The lid extends left (front) from
+        // this hinge and rotates around it as a rigid body, so only the front
+        // edge arcs up — not a pendulum swing from the lid's center.
         GameObject hinge = new GameObject("LidHinge");
         hinge.transform.SetParent(root.transform, false);
-        hinge.transform.localPosition = new Vector3(0f, 0f, 0f);
+        hinge.transform.localPosition = new Vector3(0.4f, 0f, 0f);
         _lidHinge = hinge.transform;
 
-        // Lid (80x28 sprite) extends upward from the hinge when closed.
+        // Lid (80x28 sprite) extends left from the hinge when closed, lying on
+        // top of the body. localPosition (-0.4, 0.14) puts the lid's right
+        // edge + bottom at the hinge, so it spans chest-root x in [-0.4,0.4],
+        // y in [0, 0.28].
         GameObject lid = new GameObject("Lid");
         lid.transform.SetParent(hinge.transform, false);
         SpriteRenderer lsr = lid.AddComponent<SpriteRenderer>();
         lsr.sprite = SpriteGenerator.CreateChestLidSprite();
         lsr.sortingOrder = 52;
-        lid.transform.localPosition = new Vector3(0f, 0.14f, 0f);
+        lid.transform.localPosition = new Vector3(-0.4f, 0.14f, 0f);
 
         return root;
     }
 
-    // --- Phase 1: seal-break ---
+    // --- Phase 1: seal-break (three-stage rigid-body rotation around the hinge) ---
 
     private IEnumerator LiftLid(Vector3 mouth)
     {
-        // Gold light beam leaking from the crack (sibling of hinge, at the seam).
+        // Gold light beam leaking from the crack, placed at the FRONT of the
+        // seam (where the lid lifts first). Sibling of the hinge (chest root).
         SpriteRenderer beamSr = null;
         if (_lidHinge != null && _lidHinge.parent != null)
         {
             GameObject beam = new GameObject("Beam");
             beam.transform.SetParent(_lidHinge.parent, false);
-            beam.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            beam.transform.localPosition = new Vector3(-0.2f, 0.1f, 0f);
             beamSr = beam.AddComponent<SpriteRenderer>();
             beamSr.sprite = SpriteGenerator.CreateSquareSprite(new Color(1f, 0.85f, 0.4f));
             beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
             beamSr.sortingOrder = 50;
-            beam.transform.localScale = new Vector3(0.15f, 1.75f, 1f);
+            beam.transform.localScale = new Vector3(0.15f, 1.5f, 1f);
             _spawned.Add(beam);
         }
 
         Vector3 bodyBase = _chestBody != null ? _chestBody.localPosition : Vector3.zero;
 
-        // 1a: slow lift 0 -> 70°.
+        // The lid extends in -x from the hinge, so a NEGATIVE z rotation (CW)
+        // swings the front edge up = opening. Angles below are negative.
+
+        // Stage 1 "蓄力微启" (0~0.1s): 0 -> -6°, EaseIn (slow start, the lid
+        // is gently nudged by the internal force; light leaks from the crack).
         float e = 0f;
-        while (e < 0.12f)
+        while (e < 0.1f)
         {
             e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.12f);
-            float angle = Mathf.Lerp(0f, -70f, t);
+            float t = Mathf.Clamp01(e / 0.1f);
+            float ti = t * t; // EaseIn
+            float angle = Mathf.Lerp(0f, -6f, ti);
             if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
             SetBeam(beamSr, Mathf.Abs(angle));
-            Tremor(_chestBody, bodyBase, 0.012f);
-            if (Random.value < 0.4f) StartCoroutine(Spark(mouth));
+            Tremor(_chestBody, bodyBase, 0.008f);
+            if (Random.value < 0.25f) StartCoroutine(Spark(mouth));
             yield return null;
         }
 
-        // 1b: stutter near 70° (resistance).
+        // Stage 2 "主开合" (0.1~0.2s): -6 -> -75°, EaseInOut (accelerate then
+        // decelerate; the front edge arcs up fast, slowing near 70-80°).
         e = 0f;
-        while (e < 0.07f)
+        while (e < 0.1f)
         {
             e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.07f);
-            float angle = -70f + Mathf.Sin(t * 40f) * 2.5f;
+            float t = Mathf.Clamp01(e / 0.1f);
+            float tio = t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f; // EaseInOut
+            float angle = Mathf.Lerp(-6f, -75f, tio);
             if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
-            SetBeam(beamSr, 70f);
-            Tremor(_chestBody, bodyBase, 0.02f);
+            SetBeam(beamSr, Mathf.Abs(angle));
+            Tremor(_chestBody, bodyBase, 0.014f);
+            if (Random.value < 0.5f) StartCoroutine(Spark(mouth));
             yield return null;
         }
 
-        // 1c: snap to ~118°.
+        // Stage 3 "弹顶回弹" (0.2~0.4s): overshoot to -105° (past vertical),
+        // then rebound to settle at -95° — a snappy finish.
         e = 0f;
-        while (e < 0.05f)
+        while (e < 0.1f)
         {
             e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.05f);
-            float angle = Mathf.Lerp(-70f, -118f, t);
+            float t = Mathf.Clamp01(e / 0.1f);
+            float angle = Mathf.Lerp(-75f, -105f, t);
+            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
+            SetBeam(beamSr, Mathf.Abs(angle));
+            yield return null;
+        }
+        e = 0f;
+        while (e < 0.1f)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / 0.1f);
+            float angle = Mathf.Lerp(-105f, -95f, t); // rebound to settle
             if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
             SetBeam(beamSr, Mathf.Abs(angle));
             yield return null;
         }
 
-        // Snap complete: shockwave + hide beam.
+        // Open complete: hide beam + shockwave.
         if (beamSr != null) beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
         StartCoroutine(Shockwave(mouth));
     }
@@ -290,7 +316,8 @@ public class WinSequence : MonoBehaviour
     private void SetBeam(SpriteRenderer sr, float angle)
     {
         if (sr == null) return;
-        float k = Mathf.Clamp01(angle / 118f);
+        // Intensity grows with the opening angle (0 -> ~95°).
+        float k = Mathf.Clamp01(angle / 95f);
         sr.color = new Color(1f, 0.85f, 0.4f, k * 0.85f);
     }
 
