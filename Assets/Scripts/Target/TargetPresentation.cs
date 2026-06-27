@@ -67,7 +67,15 @@ public class TargetPresentation
             _board.Cells[row, col].specialType = GameConfig.SpecialType.None;
             _board.Cells[row, col].gameObject = null;
 
-            if (go == null) continue;
+            if (go == null)
+            {
+                // No gameObject to fly (e.g. cell was pre-destroyed): decrement
+                // the display counter directly so it stays in sync with the
+                // logical counter and the TopBar reaches 0 at the win.
+                displayCount = displayCount > 0 ? displayCount - 1 : 0;
+                _gameManager.RefreshTopBar();
+                continue;
+            }
 
             flyingCount++;
             _gameManager.StartCoroutine(HitAndFly(go, go.transform.position));

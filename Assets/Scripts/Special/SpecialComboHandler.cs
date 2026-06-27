@@ -106,14 +106,16 @@ public class SpecialComboHandler
             if (_board.Cells[r, c].elementType == ElementType.Suitcase)
                 hitSuitcases.Add((r, c));
 
+        // Route suitcase hits BEFORE destroying the cells so their gameObjects
+        // survive to become flyers (keeps the display counter in sync).
+        if (hitSuitcases.Count > 0 && _gameManager.targetPresentation != null)
+            _gameManager.targetPresentation.OnSuitcaseHit(hitSuitcases.Count, hitSuitcases);
+
         // Flash + clear.
         yield return Flash(clear);
 
         foreach (var (r, c) in clear)
             _board.DestroyCell(r, c);
-
-        if (hitSuitcases.Count > 0 && _gameManager.targetPresentation != null)
-            _gameManager.targetPresentation.OnSuitcaseHit(hitSuitcases.Count, hitSuitcases);
 
         // A combo is a swap-move: costs one step.
         _gameManager.DecreaseStep();

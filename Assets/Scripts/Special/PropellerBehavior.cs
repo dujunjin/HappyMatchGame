@@ -141,14 +141,17 @@ public class PropellerBehavior : MonoBehaviour
                 hitSuitcases.Add((r, c));
         }
 
+        // Route suitcase hits BEFORE destroying the cells so their gameObjects
+        // are still around to become flyers (otherwise the display counter
+        // desyncs from the logical counter).
+        if (hitSuitcases.Count > 0 && _gameManager.targetPresentation != null)
+            _gameManager.targetPresentation.OnSuitcaseHit(hitSuitcases.Count, hitSuitcases);
+
         // Brief impact flash on the cells being cleared.
         yield return FlashCells(clearCells);
 
         foreach (var (r, c) in clearCells)
             _board.DestroyCell(r, c);
-
-        if (hitSuitcases.Count > 0 && _gameManager.targetPresentation != null)
-            _gameManager.targetPresentation.OnSuitcaseHit(hitSuitcases.Count, hitSuitcases);
 
         // Shrink out the propeller.
         yield return AnimationHelper.ShrinkAndDestroy(gameObject, 0.15f);
