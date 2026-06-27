@@ -48,8 +48,8 @@ public class GameManager : MonoBehaviour
     /// <summary>Phase E: pooled particle effects (clears + specials).</summary>
     public VfxSystem Vfx { get; private set; }
 
-    /// <summary>Phase E: winter background + snow field.</summary>
-    public WinterBackground winterBackground { get; private set; }
+    /// <summary>Phase E: christmas-night background + snow field.</summary>
+    public ChristmasBackground winterBackground { get; private set; }
     public SnowField snowField { get; private set; }
 
     /// <summary>Phase E: procedural SFX via 4 mix groups.</summary>
@@ -109,10 +109,10 @@ public class GameManager : MonoBehaviour
             boardController, Flow, levelConfig);
 
         // Phase E: environment + particles (MonoBehaviours; created via AddComponent).
-        winterBackground = FindObjectOfType<WinterBackground>();
+        winterBackground = FindObjectOfType<ChristmasBackground>();
         if (winterBackground == null)
         {
-            winterBackground = new GameObject("WinterBackground").AddComponent<WinterBackground>();
+            winterBackground = new GameObject("ChristmasBackground").AddComponent<ChristmasBackground>();
         }
         Vfx = FindObjectOfType<VfxSystem>();
         if (Vfx == null)

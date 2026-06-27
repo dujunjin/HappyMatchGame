@@ -42,6 +42,10 @@ public class SpecialFactory
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = _gameManager.GetSpriteForType(elementType, GameConfig.SpecialType.Rocket, dir);
         sr.sortingOrder = 2;
+        // The rocket sprite points right; rotate 90° for a vertical rocket so
+        // the directional art matches the line it will clear.
+        if (dir == GameConfig.RocketDir.Vertical)
+            go.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
 
         CircleCollider2D collider2D = go.AddComponent<CircleCollider2D>();
         collider2D.radius = _board.cellSize * 0.45f;

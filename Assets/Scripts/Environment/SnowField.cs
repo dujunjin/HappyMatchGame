@@ -23,7 +23,7 @@ public class SnowField : MonoBehaviour
     private Camera _cam;
     private float _xRange, _yTop, _yBottom;
 
-    public void Init(int backCount = 45, int frontCount = 25, int rainCount = 10)
+    public void Init(int backCount = 26, int frontCount = 14, int rainCount = 6)
     {
         _cam = Camera.main;
         if (_cam == null) return;
@@ -37,6 +37,7 @@ public class SnowField : MonoBehaviour
         Sprite snow = SpriteGenerator.CreateCircleSprite(Color.white);
         Sprite rain = SpriteGenerator.CreateSquareSprite(new Color(0.7f, 0.8f, 0.95f, 0.5f));
 
+        // Back layer: far, small + dense. Front layer: near, large + soft.
         SpawnLayer(snow, backCount, slow: true, sortingOrder: -5);
         SpawnLayer(snow, frontCount, slow: false, sortingOrder: 10);
         SpawnRain(rain, rainCount);
@@ -50,17 +51,19 @@ public class SnowField : MonoBehaviour
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
             sr.sortingOrder = sortingOrder;
-            float size = slow ? Random.Range(0.05f, 0.1f) : Random.Range(0.12f, 0.2f);
-            sr.color = new Color(1f, 1f, 1f, slow ? Random.Range(0.3f, 0.5f) : Random.Range(0.55f, 0.8f));
+            // Back (far): small + low alpha (dense). Front (near): large + softer.
+            float size = slow ? Random.Range(0.04f, 0.08f) : Random.Range(0.16f, 0.26f);
+            sr.color = new Color(1f, 1f, 1f, slow ? Random.Range(0.35f, 0.55f) : Random.Range(0.25f, 0.45f));
             go.transform.localScale = Vector3.one * size;
             go.transform.position = new Vector3(Random.Range(-_xRange, _xRange), Random.Range(_yBottom, _yTop), 0f);
 
             Flake f = new Flake
             {
                 tr = go.transform,
-                vel = new Vector3(0f, slow ? Random.Range(-0.3f, -0.5f) : Random.Range(-0.6f, -1.0f), 0f),
+                // Back falls slowly; front faster (closer to camera).
+                vel = new Vector3(0f, slow ? Random.Range(-0.25f, -0.45f) : Random.Range(-0.7f, -1.1f), 0f),
                 driftPhase = Random.Range(0f, 6.28f),
-                driftAmp = slow ? Random.Range(0.1f, 0.25f) : Random.Range(0.2f, 0.4f),
+                driftAmp = slow ? Random.Range(0.08f, 0.2f) : Random.Range(0.25f, 0.45f),
                 driftSpeed = Random.Range(0.8f, 1.6f),
             };
             _flakes.Add(f);

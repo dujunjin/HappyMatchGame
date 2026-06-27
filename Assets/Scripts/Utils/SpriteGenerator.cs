@@ -232,137 +232,157 @@ public static class SpriteGenerator
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
 
+    /// <summary>
+    /// Rocket: a missile pointing right (nose cone + body + fins + flame tail
+    /// + window). Clearly directional so a player can tell it from a bomb/
+    /// propeller at a glance. Rotate the GameObject 90° for a vertical rocket.
+    /// </summary>
     public static Sprite CreateRocketSprite(Color color, int size = 64)
     {
         Texture2D tex = new Texture2D(size, size);
         tex.filterMode = FilterMode.Bilinear;
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(size / 2f, size / 2f));
-                if (dist <= size * 0.4f)
-                {
-                    float alpha = 1f;
-                    tex.SetPixel(x, y, new Color(color.r, color.g, color.b, alpha));
-                }
-                else
-                {
-                    tex.SetPixel(x, y, Color.clear);
-                }
-            }
-        }
-        tex.Apply();
-
-        // Add a white star/cross indicator
-        for (int i = 0; i < size; i++)
-        {
-            tex.SetPixel(size / 2, i, Color.white);
-            tex.SetPixel(i, size / 2, Color.white);
-        }
-        tex.Apply();
-
-        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-    }
-
-    public static Sprite CreateBombSprite(Color color, int size = 64)
-    {
-        Texture2D tex = new Texture2D(size, size);
-        tex.filterMode = FilterMode.Bilinear;
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(size / 2f, size / 2f));
-                if (dist <= size * 0.4f)
-                {
-                    float alpha = 1f;
-                    tex.SetPixel(x, y, new Color(color.r, color.g, color.b, alpha));
-                }
-                else
-                {
-                    tex.SetPixel(x, y, Color.clear);
-                }
-            }
-        }
-        tex.Apply();
-
-        // Add a circle indicator
-        float indicatorRadius = size * 0.18f;
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(size / 2f, size / 2f));
-                if (dist <= indicatorRadius)
-                {
-                    tex.SetPixel(x, y, Color.black);
-                }
-            }
-        }
-        tex.Apply();
-
-        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-    }
-
-    /// <summary>
-    /// Procedural propeller: a colored hub with two crossed rotor blades and a
-    /// white center cap. Distinguished from rocket/bomb by the blade shape.
-    /// </summary>
-    public static Sprite CreatePropellerSprite(Color color, int size = 64)
-    {
-        Texture2D tex = new Texture2D(size, size);
-        tex.filterMode = FilterMode.Bilinear;
-
+        Color body = color;
+        Color dark = new Color(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f, 1f);
+        Color light = new Color(color.r * 0.5f + 0.5f, color.g * 0.5f + 0.5f, color.b * 0.5f + 0.5f, 1f);
+        Color flame = new Color(1f, 0.7f, 0.2f, 1f);
+        Color flameCore = new Color(1f, 0.95f, 0.5f, 1f);
         Vector2 center = new Vector2(size / 2f, size / 2f);
-        float hubRadius = size * 0.18f;
-        float bladeLength = size * 0.42f;
-        float bladeHalfWidth = size * 0.10f;
 
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
             {
                 Vector2 p = new Vector2(x, y);
-                Vector2 d = p - center;
-                float dist = d.magnitude;
-
                 Color c = Color.clear;
 
-                // Hub
-                if (dist <= hubRadius)
-                {
-                    c = color;
-                }
+                // Flame tail (left of body).
+                if (x >= 4 && x < 18 && Mathf.Abs(y - 32) <= 2 + Mathf.Sin(x * 0.8f) * 2)
+                    c = flame;
+                if (x >= 8 && x < 16 && Mathf.Abs(y - 32) <= 1)
+                    c = flameCore;
 
-                // Two crossed blades (along X and Y axes -> a plus/cross).
-                if (dist <= bladeLength)
-                {
-                    if (Mathf.Abs(d.y) <= bladeHalfWidth || Mathf.Abs(d.x) <= bladeHalfWidth)
-                    {
-                        // Blade: slightly brighter than hub for contrast.
-                        c = new Color(color.r * 0.75f + 0.25f, color.g * 0.75f + 0.25f, color.b * 0.75f + 0.25f, 1f);
-                    }
-                }
+                // Fins (top + bottom at the back).
+                if (PointInTriangle(p, new Vector2(18, 38), new Vector2(18, 46), new Vector2(30, 38))) c = dark;
+                if (PointInTriangle(p, new Vector2(18, 26), new Vector2(18, 18), new Vector2(30, 26))) c = dark;
+
+                // Body (rectangle).
+                if (x >= 18 && x <= 46 && y >= 26 && y <= 38) c = body;
+
+                // White stripe + window.
+                if (x >= 24 && x <= 42 && (y == 30 || y == 34)) c = Color.white;
+                if (Vector2.Distance(p, new Vector2(32, 32)) <= 3.5f) c = light;
+                if (Vector2.Distance(p, new Vector2(32, 32)) <= 2f) c = Color.white;
+
+                // Nose cone (triangle pointing right).
+                if (PointInTriangle(p, new Vector2(46, 26), new Vector2(46, 38), new Vector2(58, 32))) c = light;
 
                 tex.SetPixel(x, y, c);
             }
         }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
 
-        // White center cap
-        float capRadius = size * 0.09f;
+    /// <summary>
+    /// Bomb: a dark sphere with a lit fuse + spark and a specular highlight.
+    /// The element color tints a thin rim so the bomb still "belongs" to a
+    /// color group but reads unambiguously as a bomb.
+    /// </summary>
+    public static Sprite CreateBombSprite(Color color, int size = 64)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+        Vector2 sphereC = new Vector2(32, 26);
+        float sphereR = 21f;
+        Color dark = new Color(0.13f, 0.13f, 0.16f, 1f);
+        Color mid = new Color(0.22f, 0.22f, 0.26f, 1f);
+
+        // Fuse path points (a little curve up-right from the top of the sphere).
+        Vector2[] fuse = new Vector2[] {
+            new Vector2(34, 46), new Vector2(36, 50),
+            new Vector2(40, 53), new Vector2(44, 55), new Vector2(48, 54)
+        };
+
         for (int y = 0; y < size; y++)
         {
             for (int x = 0; x < size; x++)
             {
-                if (Vector2.Distance(new Vector2(x, y), center) <= capRadius)
-                    tex.SetPixel(x, y, Color.white);
+                Vector2 p = new Vector2(x, y);
+                Color c = Color.clear;
+                float d = Vector2.Distance(p, sphereC);
+
+                // Sphere with a colored rim.
+                if (d <= sphereR)
+                {
+                    c = d > sphereR - 2.5f ? color : (d > sphereR - 5f ? mid : dark);
+                }
+                // Specular highlight.
+                if (Vector2.Distance(p, new Vector2(23, 33)) <= 4f) c = new Color(0.85f, 0.85f, 0.9f, 1f);
+                if (Vector2.Distance(p, new Vector2(23, 33)) <= 2f) c = Color.white;
+
+                // Fuse.
+                for (int i = 0; i < fuse.Length - 1; i++)
+                    if (DistToSegment(p, fuse[i], fuse[i + 1]) <= 1.4f) c = new Color(0.4f, 0.3f, 0.2f, 1f);
+
+                // Spark at the fuse end.
+                if (Vector2.Distance(p, fuse[fuse.Length - 1]) <= 3f) c = new Color(1f, 0.85f, 0.3f, 1f);
+                if (Vector2.Distance(p, fuse[fuse.Length - 1]) <= 1.5f) c = Color.white;
+
+                tex.SetPixel(x, y, c);
             }
         }
         tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
 
+    /// <summary>
+    /// Propeller: three tapered rotor blades 120° apart + a colored hub + white
+    /// center cap. Reads as a propeller (not a plus/cross) at a glance.
+    /// </summary>
+    public static Sprite CreatePropellerSprite(Color color, int size = 64)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+        Vector2 center = new Vector2(size / 2f, size / 2f);
+        float hubR = size * 0.16f;
+        float bladeLen = size * 0.44f;
+        Color blade = new Color(color.r * 0.7f + 0.3f, color.g * 0.7f + 0.3f, color.b * 0.7f + 0.3f, 1f);
+
+        // 3 blades at 0°, 120°, 240°.
+        Vector2[] armEnds = new Vector2[3];
+        for (int a = 0; a < 3; a++)
+        {
+            float ang = a * Mathf.PI * 2f / 3f;
+            armEnds[a] = center + new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * bladeLen;
+        }
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new Vector2(x, y);
+                Color c = Color.clear;
+                float dist = Vector2.Distance(p, center);
+
+                // Blades: thick near the hub, tapering to the tip.
+                for (int a = 0; a < 3; a++)
+                {
+                    float t = Mathf.Clamp01(Vector2.Dot(p - center, armEnds[a] - center) / (bladeLen * bladeLen));
+                    if (t < 0f || t > 1f) continue;
+                    Vector2 onArm = center + (armEnds[a] - center) * t;
+                    float perp = Vector2.Distance(p, onArm);
+                    float halfW = Mathf.Lerp(size * 0.10f, size * 0.03f, t); // taper
+                    if (perp <= halfW) { c = blade; break; }
+                }
+
+                // Hub + cap.
+                if (dist <= hubR) c = color;
+                if (dist <= hubR * 0.5f) c = Color.white;
+
+                tex.SetPixel(x, y, c);
+            }
+        }
+        tex.Apply();
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
 
