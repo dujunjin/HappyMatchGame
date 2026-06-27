@@ -66,11 +66,12 @@ public class SuitcaseManager
     }
 
     /// <summary>
-    /// Check suitcases adjacent to the given matched cells and clear them.
-    /// Also includes any suitcase that is itself a matched cell (e.g. three
-    /// suitcases aligned into a "match" by MatchDetector) so those count
-    /// toward the goal too — otherwise clustered suitcase layouts would lose
-    /// progress whenever gravity lined three of them up.
+    /// Collect suitcases that should be cleared: any suitcase adjacent to a
+    /// matched cell, plus any suitcase that is itself a matched cell (e.g.
+    /// three suitcases aligned into a "match"). Routes them to
+    /// TargetPresentation, which detaches the gameObject, plays the hit/fly
+    /// animation, and counts them — SuitcaseManager no longer destroys the
+    /// cells itself.
     /// </summary>
     public void CheckAdjacentSuitcases(List<(int row, int col)> matchedCells)
     {
@@ -101,15 +102,6 @@ public class SuitcaseManager
             }
         }
 
-        // Clear suitcases
-        foreach (var (row, col) in toClear)
-        {
-            _board.DestroyCell(row, col);
-        }
-
-        // Route the decrement through TargetPresentation so Phase C can
-        // intercept the clear event (flyers / target-bar bounce) without
-        // touching SuitcaseManager or the specials that call into it.
         if (toClear.Count > 0 && GameManager.Instance != null && GameManager.Instance.targetPresentation != null)
         {
             GameManager.Instance.targetPresentation.OnSuitcaseHit(toClear.Count, new List<(int, int)>(toClear));

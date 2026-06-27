@@ -93,4 +93,49 @@ public class TopBarView : MonoBehaviour
         if (stepsText != null)
             stepsText.text = $"Steps: {steps}";
     }
+
+    /// <summary>
+    /// World-space position of the target icon, for flyers to home in on.
+    /// The TopBar lives on a ScreenSpaceOverlay canvas whose transform
+    /// positions are in screen pixels, so convert through the camera.
+    /// </summary>
+    public Vector3 GetTargetWorldPosition()
+    {
+        if (targetIcon == null) return Vector3.zero;
+        Vector3 screenPos = targetIcon.transform.position;
+        // Distance from camera (at z=-10) to the z=0 plane is 10.
+        screenPos.z = -Camera.main.transform.position.z;
+        Vector3 world = Camera.main.ScreenToWorldPoint(screenPos);
+        world.z = 0;
+        return world;
+    }
+
+    /// <summary>
+    /// Brief 0.16s scale pop on the target icon + number when a flyer lands,
+    /// per spec §5.2.4. Runs as a coroutine; re-triggering restarts it.
+    /// </summary>
+    public void Bounce()
+    {
+        if (targetIcon == null) return;
+        StopAllCoroutines();
+        StartCoroutine(BounceRoutine());
+    }
+
+    private System.Collections.IEnumerator BounceRoutine()
+    {
+        const float duration = 0.16f;
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            // 1 -> 1.25 -> 1 via sine.
+            float s = 1f + Mathf.Sin(t * Mathf.PI) * 0.25f;
+            if (targetIcon != null) targetIcon.transform.localScale = Vector3.one * s;
+            if (targetText != null) targetText.transform.localScale = Vector3.one * s;
+            yield return null;
+        }
+        if (targetIcon != null) targetIcon.transform.localScale = Vector3.one;
+        if (targetText != null) targetText.transform.localScale = Vector3.one;
+    }
 }

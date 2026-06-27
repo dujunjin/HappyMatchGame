@@ -6,5 +6,6 @@ public enum GameState
     Clearing,
     Falling,
     Refilling,
+    Settling,
     GameOver
 }

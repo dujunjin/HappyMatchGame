@@ -54,22 +54,25 @@ public class BoardPresenter
     }
 
     /// <summary>
-    /// Run the cascade loop, then once the board has settled, check for a dead
-    /// board and shuffle if no legal swap remains. Skipped when the game just
-    /// ended (win/lose): RunCascade normalizes state to Idle, so the counters
-    /// are the reliable end-of-game signal here.
+    /// Run the cascade loop, then resolve the settle: if flyers are still in
+    /// flight, hold in Settling until the last one lands (TargetPresentation
+    /// then calls OnSettleComplete); otherwise resolve end-game + dead-board
+    /// immediately. This implements the victory barrier (spec §5.2.5): the
+    /// win/lose result is not shown until the cascade AND all flyers finish.
     /// </summary>
     public IEnumerator PresentCascade()
     {
         yield return _cascadeManager.RunCascade();
 
-        // Win/lose may have triggered during the cascade; don't shuffle then.
-        if (_flow.RemainingSuitcases <= 0 || _flow.RemainingSteps <= 0) yield break;
-
-        // Dead-board check + shuffle (animation + data reassign).
-        if (_deadBoardDetector != null && !_deadBoardDetector.HasLegalSwap(_board))
+        // Flyers still flying -> wait; TargetPresentation.OnSettleComplete
+        // fires when the last one lands. Input stays locked via Settling.
+        if (_gameManager.targetPresentation != null && _gameManager.targetPresentation.HasInFlight)
         {
-            yield return _deadBoardDetector.Shuffle(_board, _levelConfig, _gameManager);
+            _flow.SetState(GameState.Settling);
+            yield break;
         }
+
+        // No flyers: resolve end-game (win/lose barrier) + dead-board now.
+        _gameManager.OnSettleComplete();
     }
 }

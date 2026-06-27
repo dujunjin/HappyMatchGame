@@ -35,4 +35,16 @@ public class GameUI : MonoBehaviour
     {
         _resultDialog?.Show(won);
     }
+
+    /// <summary>World position of the target icon (flyer destination).</summary>
+    public UnityEngine.Vector3 GetTargetWorldPosition()
+    {
+        return _topBar != null ? _topBar.GetTargetWorldPosition() : UnityEngine.Vector3.zero;
+    }
+
+    /// <summary>Pop the target icon + number when a flyer lands.</summary>
+    public void BounceTarget()
+    {
+        _topBar?.Bounce();
+    }
 }

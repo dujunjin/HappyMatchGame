@@ -105,13 +105,14 @@ public class GameManager : MonoBehaviour
         cascadeManager.Init(boardController, matchDetector, swapHandler, gravitySystem, specialFactory, this);
         specialFactory.Init(boardController, this);
         suitcaseManager.Init(boardController);
-        targetPresentation.Init(this, Flow);
         boardInput.Init(boardController, swapHandler, this);
         gameUI.Init(this);
 
-        // Initialize flow (counters + UI). Layout already carries suitcases,
-        // so SuitcaseManager.PlaceInitialSuitcases() is intentionally skipped.
-        Flow.Init(levelConfig, gameUI);
+        // Order matters: Flow.Init sets the logical counters first, then
+        // TargetPresentation.Init reads them to seed the display count and
+        // refreshes the TopBar.
+        Flow.Init(levelConfig, this);
+        targetPresentation.Init(this, Flow);
 
         SetState(GameState.Idle);
     }
@@ -125,6 +126,47 @@ public class GameManager : MonoBehaviour
     public void SetState(GameState newState) => Flow.SetState(newState);
     public void DecreaseStep() => Flow.DecreaseStep();
     public void DecreaseSuitcase(int count = 1) => Flow.DecreaseSuitcase(count);
+
+    /// <summary>
+    /// Refresh the TopBar from the DISPLAY suitcase count (lags logical during
+    /// flyer flight) and the live step count. Single source of truth for the
+    /// top bar so Flow and TargetPresentation never desync it.
+    /// </summary>
+    public void RefreshTopBar()
+    {
+        int disp = targetPresentation != null ? targetPresentation.displayCount : Flow.RemainingSuitcases;
+        gameUI?.UpdateTopBar(disp, Flow.RemainingSteps);
+    }
+
+    public void ShowResult(bool won) => gameUI?.ShowResult(won);
+
+    /// <summary>
+    /// Called by BoardPresenter after a cascade with no in-flight flyers, and
+    /// by TargetPresentation when the last flyer lands. Resolves the pending
+    /// end-game (victory barrier) and, if play continues, runs the dead-board
+    /// check (shuffle stays in Settling until done).
+    /// </summary>
+    public void OnSettleComplete()
+    {
+        Flow.CheckEndGame();
+        if (Flow.State == GameState.GameOver) return;
+
+        if (deadBoardDetector != null && !deadBoardDetector.HasLegalSwap(boardController))
+        {
+            Flow.SetState(GameState.Settling);
+            StartCoroutine(ShuffleThenSettle());
+        }
+        else
+        {
+            Flow.SetState(GameState.Idle);
+        }
+    }
+
+    private IEnumerator ShuffleThenSettle()
+    {
+        yield return deadBoardDetector.Shuffle(boardController, levelConfig, this);
+        Flow.SetState(GameState.Idle);
+    }
 
     private BoardController FindOrCreateBoardController()
     {

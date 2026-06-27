@@ -2,46 +2,62 @@ using UnityEngine;
 
 /// <summary>
 /// Authority for the match-3 state machine, step/suitcase counters, input
-/// gating, and win/lose detection. Extracted from GameManager so the central
-/// MonoBehaviour stays a thin orchestrator. GameManager delegates its
-/// State/RemainingSteps/RemainingSuitcase APIs here.
+/// gating, and win/lose detection. Extracted from GameManager.
 ///
-/// Input gating:
-///   - CanAcceptInput: normal swaps/clicks (Idle or Selecting only).
-///   - CanActivateSpecial: rocket/bomb taps (Idle, Selecting, or Clearing).
-///   During Swapping/Falling/Refilling/GameOver all ordinary input is
-///   rejected so animations cannot be interrupted.
+/// Phase C: the suitcase counter is split into a LOGICAL count
+/// (RemainingSuitcases, decremented immediately on hit — used for win
+/// detection and to prevent double-hits) and a DISPLAY count (owned by
+/// TargetPresentation, decremented when a flyer reaches the target bar).
+/// Win and lose are NOT triggered immediately: DecreaseStep/DecreaseSuitcase
+/// only set LosePending/WinPending. The actual result is triggered by
+/// CheckEndGame() once the cascade has settled AND all in-flight flyers have
+/// arrived (the "victory barrier" — spec §5.2.5). Win takes priority over
+/// lose so a final-step cascade that clears the last suitcase still wins.
 /// </summary>
 public class GameFlowController
 {
     public GameState State { get; private set; } = GameState.Idle;
     public int RemainingSteps { get; private set; }
     public int RemainingSuitcases { get; private set; }
+    public bool WinPending { get; private set; }
+    public bool LosePending { get; private set; }
 
-    private GameUI _ui;
+    private GameManager _gm;
     private int _maxSteps;
     private int _targetSuitcases;
 
     public GameFlowController() { }
 
-    /// <summary>
-    /// Late-bind config + UI. Called from GameManager.Start once GameUI is
-    /// available. Resets counters to the level's initial values.
-    /// </summary>
-    public void Init(LevelConfig config, GameUI ui)
+    public void Init(LevelConfig config, GameManager gm)
     {
         if (config == null) config = LevelConfig.Default;
+        _gm = gm;
         _maxSteps = config.maxSteps;
         _targetSuitcases = config.targetSuitcaseCount;
-        _ui = ui;
         RemainingSteps = _maxSteps;
         RemainingSuitcases = _targetSuitcases;
+        WinPending = false;
+        LosePending = false;
         State = GameState.Idle;
-        _ui?.UpdateTopBar(RemainingSuitcases, RemainingSteps);
+        // RefreshTopBar is called by TargetPresentation.Init after the display
+        // count is initialized; Flow.Init just sets the logical values.
     }
 
-    public bool CanAcceptInput => State == GameState.Idle || State == GameState.Selecting;
-    public bool CanActivateSpecial => State == GameState.Idle || State == GameState.Selecting || State == GameState.Clearing;
+    /// <summary>
+    /// Normal swaps/clicks: only when Idle/Selecting and no end-game is
+    /// pending. WinPending/LosePending block input so the player can't act
+    /// between the logical clear and the flyer arrivals / end-game trigger.
+    /// </summary>
+    public bool CanAcceptInput =>
+        (State == GameState.Idle || State == GameState.Selecting) &&
+        !WinPending && !LosePending;
+
+    /// <summary>
+    /// Specials (rocket/bomb/propeller) may still chain during a cascade
+    /// (Clearing). Blocked during Swapping/Falling/Refilling/Settling/GameOver.
+    /// </summary>
+    public bool CanActivateSpecial =>
+        State == GameState.Idle || State == GameState.Selecting || State == GameState.Clearing;
 
     public void SetState(GameState newState)
     {
@@ -53,13 +69,11 @@ public class GameFlowController
         if (State == GameState.GameOver) return;
         int next = RemainingSteps - 1;
         RemainingSteps = next < 0 ? 0 : next;
-        _ui?.UpdateTopBar(RemainingSuitcases, RemainingSteps);
+        _gm?.RefreshTopBar();
 
-        if (RemainingSteps <= 0 && RemainingSuitcases > 0)
-        {
-            SetState(GameState.GameOver);
-            _ui?.ShowResult(false);
-        }
+        // Defer the lose trigger: the cascade/flyers from this same swap might
+        // still clear the last suitcase and win.
+        if (RemainingSteps <= 0) LosePending = true;
     }
 
     public void DecreaseSuitcase(int count = 1)
@@ -67,12 +81,32 @@ public class GameFlowController
         if (State == GameState.GameOver) return;
         int next = RemainingSuitcases - count;
         RemainingSuitcases = next < 0 ? 0 : next;
-        _ui?.UpdateTopBar(RemainingSuitcases, RemainingSteps);
 
-        if (RemainingSuitcases <= 0)
-        {
-            SetState(GameState.GameOver);
-            _ui?.ShowResult(true);
-        }
+        // Defer the win trigger until all flyers arrive (victory barrier).
+        if (RemainingSuitcases <= 0) WinPending = true;
+    }
+
+    /// <summary>
+    /// Called after the cascade settles AND all flyers have landed. Resolves
+    /// the pending end state (win beats lose) or returns to Idle.
+    /// </summary>
+    public void CheckEndGame()
+    {
+        if (State == GameState.GameOver) return;
+        if (WinPending) { TriggerWin(); return; }
+        if (LosePending) { TriggerLose(); return; }
+        SetState(GameState.Idle);
+    }
+
+    public void TriggerWin()
+    {
+        SetState(GameState.GameOver);
+        _gm?.ShowResult(true);
+    }
+
+    public void TriggerLose()
+    {
+        SetState(GameState.GameOver);
+        _gm?.ShowResult(false);
     }
 }
