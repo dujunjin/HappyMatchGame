@@ -1,0 +1,38 @@
+using UnityEngine;
+
+/// <summary>
+/// Main UI manager - initializes top bar and result dialog.
+/// </summary>
+public class GameUI : MonoBehaviour
+{
+    private TopBarView _topBar;
+    private ResultDialog _resultDialog;
+    private GameManager _gameManager;
+
+    public void Init(GameManager gameManager)
+    {
+        _gameManager = gameManager;
+
+        // Create top bar
+        GameObject topBarGO = new GameObject("TopBarView");
+        topBarGO.transform.SetParent(transform);
+        _topBar = topBarGO.AddComponent<TopBarView>();
+        _topBar.Init(gameManager);
+
+        // Create result dialog (hidden initially)
+        GameObject resultGO = new GameObject("ResultDialog");
+        resultGO.transform.SetParent(transform);
+        _resultDialog = resultGO.AddComponent<ResultDialog>();
+        _resultDialog.Init(gameManager);
+    }
+
+    public void UpdateTopBar(int suitcases, int steps)
+    {
+        _topBar?.UpdateTopBar(suitcases, steps);
+    }
+
+    public void ShowResult(bool won)
+    {
+        _resultDialog?.Show(won);
+    }
+}

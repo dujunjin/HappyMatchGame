@@ -1,0 +1,25 @@
+# Unity generated folders
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# IDE / editor
+.vscode/
+.idea/
+*.vsconfig
+*.csproj
+*.sln
+*.suo
+*.user
+*.userosscache
+
+# OS / temp
+.DS_Store
+*.log
+*.tmp
+*.tlog
+.ipynb_checkpoints
