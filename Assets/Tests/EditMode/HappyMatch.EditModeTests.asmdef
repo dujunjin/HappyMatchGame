@@ -2,7 +2,7 @@
     "name": "HappyMatch.EditModeTests",
     "rootNamespace": "",
     "references": [
-        "Assembly-CSharp",
+        "HappyMatchGame",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
