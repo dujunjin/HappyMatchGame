@@ -26,12 +26,15 @@ public class RocketBehavior : MonoBehaviour
         _activated = false;
     }
 
-    private void OnMouseDown()
+    private void OnMouseUpAsButton()
     {
         if (_activated) return;
         // Input gate for specials: allow activation during Idle/Selecting/
         // Clearing (rockets can chain mid-cascade). Routed through
         // FlowController rather than reading GameManager.State directly.
+        // OnMouseUpAsButton (not OnMouseDown) so dragging the rocket onto an
+        // adjacent special to trigger a combo does not also fire its solo
+        // effect on press.
         if (_gameManager.Flow == null || !_gameManager.Flow.CanActivateSpecial)
             return;
         StartCoroutine(Activate());

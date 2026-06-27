@@ -267,4 +267,19 @@ public class BoardController : MonoBehaviour
         }
         return count;
     }
+
+    /// <summary>
+    /// All suitcase cells in row-major (top-to-bottom, left-to-right) order.
+    /// The first element is the "highest priority" target (topmost, then
+    /// leftmost) — used by the propeller and rocket×propeller combo.
+    /// </summary>
+    public System.Collections.Generic.List<(int row, int col)> GetSuitcaseCells()
+    {
+        var result = new System.Collections.Generic.List<(int, int)>();
+        for (int row = 0; row < _rows; row++)
+            for (int col = 0; col < _cols; col++)
+                if (_cells[row, col].elementType == ElementType.Suitcase)
+                    result.Add((row, col));
+        return result;
+    }
 }

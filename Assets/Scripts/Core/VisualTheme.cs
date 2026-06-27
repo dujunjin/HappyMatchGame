@@ -35,6 +35,7 @@ public class VisualTheme : ScriptableObject
     private Sprite _suitcaseCache;
     private readonly Dictionary<Color, Sprite> _rocketCache = new Dictionary<Color, Sprite>();
     private readonly Dictionary<Color, Sprite> _bombCache = new Dictionary<Color, Sprite>();
+    private readonly Dictionary<Color, Sprite> _propellerCache = new Dictionary<Color, Sprite>();
 
     private static VisualTheme _default;
 
@@ -94,6 +95,14 @@ public class VisualTheme : ScriptableObject
         return _bombCache[c];
     }
 
+    public Sprite GetPropellerSprite(ElementType type)
+    {
+        Color c = GetColorForType(type);
+        if (!_propellerCache.ContainsKey(c))
+            _propellerCache[c] = SpriteGenerator.CreatePropellerSprite(c);
+        return _propellerCache[c];
+    }
+
     /// <summary>
     /// Convenience: resolve a sprite for a cell given its type + special.
     /// Mirrors the old GameManager.GetSpriteForType signature so callers can
@@ -103,6 +112,7 @@ public class VisualTheme : ScriptableObject
     {
         if (special == GameConfig.SpecialType.Rocket) return GetRocketSprite(type);
         if (special == GameConfig.SpecialType.Bomb) return GetBombSprite(type);
+        if (special == GameConfig.SpecialType.Propeller) return GetPropellerSprite(type);
         return GetElementSprite(type);
     }
 

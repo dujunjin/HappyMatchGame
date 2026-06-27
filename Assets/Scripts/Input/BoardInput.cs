@@ -106,11 +106,20 @@ public class BoardInput : MonoBehaviour
             if (Helper.IsInBounds(target.row, target.col, _board.Rows, _board.Cols) &&
                 IsAdjacent(_dragSource.Value.row, _dragSource.Value.col, target.row, target.col))
             {
+                int sr = _dragSource.Value.row, sc = _dragSource.Value.col;
                 _isDragging = false;
-                StartCoroutine(ExecuteSwap(
-                    _dragSource.Value.row, _dragSource.Value.col,
-                    target.row, target.col));
                 _dragSource = null;
+
+                // Special × special drag → combo; everything else → normal swap.
+                if (_gameManager.comboHandler != null &&
+                    _gameManager.comboHandler.IsCombo(sr, sc, target.row, target.col))
+                {
+                    StartCoroutine(ExecuteCombo(sr, sc, target.row, target.col));
+                }
+                else
+                {
+                    StartCoroutine(ExecuteSwap(sr, sc, target.row, target.col));
+                }
             }
         }
         else if (!_isDragging && Input.GetMouseButton(0))
@@ -119,9 +128,10 @@ public class BoardInput : MonoBehaviour
             worldPos.z = 0;
             var cell = _board.WorldToGrid(worldPos);
 
+            // Allow dragging from any non-empty cell, INCLUDING specials, so the
+            // player can drag a special onto an adjacent special to combo.
             if (Helper.IsInBounds(cell.row, cell.col, _board.Rows, _board.Cols) &&
-                !_board.Cells[cell.row, cell.col].IsEmpty &&
-                !_board.Cells[cell.row, cell.col].HasSpecial)
+                !_board.Cells[cell.row, cell.col].IsEmpty)
             {
                 // If we have a selection, start drag from selected cell
                 if (_selectedCell.HasValue)
@@ -172,6 +182,19 @@ public class BoardInput : MonoBehaviour
         // every cascade settles.
         if (_gameManager.boardPresenter != null)
             yield return _gameManager.boardPresenter.PresentSwap(r1, c1, r2, c2);
+        else
+            yield return _gameManager.cascadeManager.RunCascade();
+    }
+
+    private IEnumerator ExecuteCombo(int r1, int c1, int r2, int c2)
+    {
+        // Special×special combo: both specials are consumed by the combo
+        // handler (no normal swap). The handler runs the combined clear, then
+        // the presenter's cascade + dead-board check.
+        if (_gameManager.comboHandler != null)
+            yield return _gameManager.comboHandler.ActivateCombo(r1, c1, r2, c2);
+        else if (_gameManager.boardPresenter != null)
+            yield return _gameManager.boardPresenter.PresentCascade();
         else
             yield return _gameManager.cascadeManager.RunCascade();
     }

@@ -24,11 +24,13 @@ public class BombBehavior : MonoBehaviour
         _activated = false;
     }
 
-    private void OnMouseDown()
+    private void OnMouseUpAsButton()
     {
         if (_activated) return;
         // Input gate for specials: allow activation during Idle/Selecting/
         // Clearing (bombs can chain mid-cascade). Routed through FlowController.
+        // OnMouseUpAsButton so dragging the bomb onto an adjacent special for a
+        // combo does not also fire its solo blast on press.
         if (_gameManager.Flow == null || !_gameManager.Flow.CanActivateSpecial)
             return;
         StartCoroutine(Activate());

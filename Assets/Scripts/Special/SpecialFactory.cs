@@ -101,4 +101,47 @@ public class SpecialFactory
         // Pop-in animation
         yield return AnimationHelper.PopIn(go, 0.2f);
     }
+
+    /// <summary>
+    /// Create a propeller at the specified position.
+    /// </summary>
+    public IEnumerator CreatePropellerAt(int row, int col)
+    {
+        if (!Helper.IsInBounds(row, col, _board.Rows, _board.Cols)) yield break;
+
+        // Get the element color at this position
+        ElementType elementType = _board.Cells[row, col].elementType;
+        if (elementType == ElementType.Empty)
+            elementType = GameConfig.NormalElements[Random.Range(0, GameConfig.NormalElements.Length)];
+
+        // Remove existing element
+        if (_board.Cells[row, col].gameObject != null)
+        {
+            Object.Destroy(_board.Cells[row, col].gameObject);
+            _board.Cells[row, col].gameObject = null;
+        }
+
+        // Create propeller game object
+        GameObject go = new GameObject("Propeller");
+        go.transform.SetParent(_board.transform);
+        go.transform.position = _board.GetWorldPosition(row, col);
+
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = _gameManager.GetSpriteForType(elementType, GameConfig.SpecialType.Propeller);
+        sr.sortingOrder = 2;
+
+        CircleCollider2D c = go.AddComponent<CircleCollider2D>();
+        c.radius = _board.cellSize * 0.45f;
+
+        // Add PropellerBehavior
+        PropellerBehavior pb = go.AddComponent<PropellerBehavior>();
+        pb.Init(_board, _gameManager, row, col, elementType);
+
+        _board.Cells[row, col].elementType = elementType;
+        _board.Cells[row, col].specialType = GameConfig.SpecialType.Propeller;
+        _board.Cells[row, col].gameObject = go;
+
+        // Pop-in animation
+        yield return AnimationHelper.PopIn(go, 0.2f);
+    }
 }

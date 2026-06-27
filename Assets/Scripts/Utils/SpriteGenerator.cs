@@ -142,4 +142,63 @@ public static class SpriteGenerator
 
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
+
+    /// <summary>
+    /// Procedural propeller: a colored hub with two crossed rotor blades and a
+    /// white center cap. Distinguished from rocket/bomb by the blade shape.
+    /// </summary>
+    public static Sprite CreatePropellerSprite(Color color, int size = 64)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+
+        Vector2 center = new Vector2(size / 2f, size / 2f);
+        float hubRadius = size * 0.18f;
+        float bladeLength = size * 0.42f;
+        float bladeHalfWidth = size * 0.10f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new Vector2(x, y);
+                Vector2 d = p - center;
+                float dist = d.magnitude;
+
+                Color c = Color.clear;
+
+                // Hub
+                if (dist <= hubRadius)
+                {
+                    c = color;
+                }
+
+                // Two crossed blades (along X and Y axes -> a plus/cross).
+                if (dist <= bladeLength)
+                {
+                    if (Mathf.Abs(d.y) <= bladeHalfWidth || Mathf.Abs(d.x) <= bladeHalfWidth)
+                    {
+                        // Blade: slightly brighter than hub for contrast.
+                        c = new Color(color.r * 0.75f + 0.25f, color.g * 0.75f + 0.25f, color.b * 0.75f + 0.25f, 1f);
+                    }
+                }
+
+                tex.SetPixel(x, y, c);
+            }
+        }
+
+        // White center cap
+        float capRadius = size * 0.09f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                if (Vector2.Distance(new Vector2(x, y), center) <= capRadius)
+                    tex.SetPixel(x, y, Color.white);
+            }
+        }
+        tex.Apply();
+
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
 }

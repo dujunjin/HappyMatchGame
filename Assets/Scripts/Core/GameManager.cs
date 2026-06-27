@@ -42,6 +42,9 @@ public class GameManager : MonoBehaviour
     /// <summary>Dead-board detection + shuffle.</summary>
     public DeadBoardDetector deadBoardDetector { get; private set; }
 
+    /// <summary>Special×special combos (rocket×rocket/bomb/propeller).</summary>
+    public SpecialComboHandler comboHandler { get; private set; }
+
     // Kept for callers that read state via GameManager; delegates to Flow.
     public GameState State => Flow != null ? Flow.State : GameState.Idle;
     public int RemainingSteps => Flow != null ? Flow.RemainingSteps : 0;
@@ -90,6 +93,7 @@ public class GameManager : MonoBehaviour
         // Presentation layer
         targetPresentation = new TargetPresentation();
         deadBoardDetector = new DeadBoardDetector(matchDetector, this);
+        comboHandler = new SpecialComboHandler(boardController, this);
         boardPresenter = new BoardPresenter(
             this, swapHandler, cascadeManager, deadBoardDetector,
             boardController, Flow, levelConfig);
@@ -168,6 +172,11 @@ public class GameManager : MonoBehaviour
         {
             // Create a bomb at (4,4)
             StartCoroutine(specialFactory.CreateBombAt(4, 4));
+        }
+        if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            // Create a propeller at (5,4)
+            StartCoroutine(specialFactory.CreatePropellerAt(5, 4));
         }
     }
 }

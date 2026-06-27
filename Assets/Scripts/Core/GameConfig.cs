@@ -41,7 +41,7 @@ public static class GameConfig
     public const float RefillDelay = 0.05f;
 
     // Special types
-    public enum SpecialType { None, Rocket, Bomb }
+    public enum SpecialType { None, Rocket, Bomb, Propeller }
 
     // Rocket direction
     public enum RocketDir { Horizontal, Vertical }
