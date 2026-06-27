@@ -43,13 +43,14 @@ public class CascadeManager
                 _gameManager.SetState(GameState.Clearing);
 
                 // Step 2: Detect special patterns (rockets carry their direction)
-                var (rockets, bombs) = _matchDetector.DetectSpecialPatterns(matches);
+                var (rockets, bombs, propellers) = _matchDetector.DetectSpecialPatterns(matches);
 
                 // Special cells are preserved and converted into click-able items,
                 // so they must NOT be cleared with the rest of the match.
                 var specialCells = new HashSet<(int, int)>();
                 foreach (var (r, c, dir) in rockets) specialCells.Add((r, c));
                 foreach (var (r, c) in bombs) specialCells.Add((r, c));
+                foreach (var (r, c) in propellers) specialCells.Add((r, c));
 
                 // Collect cells to clear (exclude special cells)
                 var allClearCells = new HashSet<(int, int)>();
@@ -84,6 +85,10 @@ public class CascadeManager
                 foreach (var (row, col) in bombs)
                 {
                     yield return _specialFactory.CreateBombAt(row, col);
+                }
+                foreach (var (row, col) in propellers)
+                {
+                    yield return _specialFactory.CreatePropellerAt(row, col);
                 }
             }
 

@@ -67,6 +67,10 @@ public class SuitcaseManager
 
     /// <summary>
     /// Check suitcases adjacent to the given matched cells and clear them.
+    /// Also includes any suitcase that is itself a matched cell (e.g. three
+    /// suitcases aligned into a "match" by MatchDetector) so those count
+    /// toward the goal too — otherwise clustered suitcase layouts would lose
+    /// progress whenever gravity lined three of them up.
     /// </summary>
     public void CheckAdjacentSuitcases(List<(int row, int col)> matchedCells)
     {
@@ -74,6 +78,10 @@ public class SuitcaseManager
 
         foreach (var (row, col) in matchedCells)
         {
+            // A matched cell that is itself a suitcase counts (3-suitcase-line).
+            if (_board.Cells[row, col].elementType == ElementType.Suitcase)
+                toClear.Add((row, col));
+
             // Check 8 neighbors
             for (int dr = -1; dr <= 1; dr++)
             {

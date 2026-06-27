@@ -86,29 +86,29 @@ public class LevelConfig : ScriptableObject
     }
 
     // ---------------------------------------------------------------------
-    //  Default fixed layout
+    //  Default fixed layout (normal-element base only)
     // ---------------------------------------------------------------------
     //
-    // 9x8 board. Derived from the (c + row) mod 4 periodic color pattern so
-    // no 3-in-a-row exists among normal elements, then:
-    //   - (0,1) B->R and (1,2) G->R to create a guaranteed legal swap:
-    //     swapping (0,2)=Y with (1,2)=R yields row0 cols 0-2 = R R R.
-    //   - 33 suitcases placed on every (row+col)-even cell EXCEPT (0,0),
-    //     (0,2), (0,4) (kept as normal so the legal swap stays available).
-    //   Suitcases sit on non-adjacent cells, so no 3-suitcase run forms.
+    // 9x8 board. The (c + row) mod 4 periodic color pattern has no 3-in-a-row
+    // among normal elements. Two cells are tweaked to create a guaranteed
+    // legal swap: (0,1) B->R and (1,2) G->R, so swapping (0,2)=Y with
+    // (1,2)=R yields row0 cols 0-2 = R R R.
     //
-    // Verified by hand: no initial 3-in-a-row (any type), 33 suitcases, and
-    // at least one legal swap (swap (0,2)<->(1,2)).
+    // Suitcases are NOT in the layout string — BoardGenerator places
+    // targetSuitcaseCount (33) of them randomly (seeded) on top of this base,
+    // allowing clustered/random distributions while avoiding any 3-suitcase
+    // run. The four legal-swap cells (0,0),(0,1),(0,2),(1,2) are protected
+    // from suitcase placement so the guaranteed swap always survives.
     private static readonly string[] DefaultLayout = new string[]
     {
-        "RRYGRBSGS", // row 0 (top)
-        "BSRSBSGSB", // row 1
-        "SGSBSGSBS", // row 2
-        "GSBSGSBSG", // row 3
-        "SBSGSBSGS", // row 4
-        "BSGSBSGSB", // row 5
-        "SGSBSGSBS", // row 6
-        "GSBSGSBSG", // row 7 (bottom)
+        "RRYGRBYGR", // row 0 (top)  — (0,1) B->R
+        "BYRRBYGRB", // row 1        — (1,2) G->R
+        "YGRBYGRBY", // row 2
+        "GRBYGRBYG", // row 3
+        "RBYGRBYGR", // row 4
+        "BYGRBYGRB", // row 5
+        "YGRBYGRBY", // row 6
+        "GRBYGRBYG", // row 7 (bottom)
     };
 
     private static LevelConfig _default;

@@ -62,6 +62,14 @@ public class BoardInput : MonoBehaviour
         }
 
         if (_board.Cells[cell.row, cell.col].IsEmpty) return;
+        // Suitcases are not player-movable: tapping one just clears any
+        // current selection (you can only clear suitcases by matching next
+        // to them or hitting them with a special).
+        if (_board.Cells[cell.row, cell.col].elementType == ElementType.Suitcase)
+        {
+            Deselect();
+            return;
+        }
         if (_board.Cells[cell.row, cell.col].HasSpecial) return;
 
         if (_selectedCell == null)
@@ -107,18 +115,23 @@ public class BoardInput : MonoBehaviour
                 IsAdjacent(_dragSource.Value.row, _dragSource.Value.col, target.row, target.col))
             {
                 int sr = _dragSource.Value.row, sc = _dragSource.Value.col;
+                int tr = target.row, tc = target.col;
                 _isDragging = false;
                 _dragSource = null;
 
+                // Suitcases are immovable: never swap onto one.
+                if (_board.Cells[tr, tc].elementType == ElementType.Suitcase)
+                    return;
+
                 // Special × special drag → combo; everything else → normal swap.
                 if (_gameManager.comboHandler != null &&
-                    _gameManager.comboHandler.IsCombo(sr, sc, target.row, target.col))
+                    _gameManager.comboHandler.IsCombo(sr, sc, tr, tc))
                 {
-                    StartCoroutine(ExecuteCombo(sr, sc, target.row, target.col));
+                    StartCoroutine(ExecuteCombo(sr, sc, tr, tc));
                 }
                 else
                 {
-                    StartCoroutine(ExecuteSwap(sr, sc, target.row, target.col));
+                    StartCoroutine(ExecuteSwap(sr, sc, tr, tc));
                 }
             }
         }
@@ -130,8 +143,10 @@ public class BoardInput : MonoBehaviour
 
             // Allow dragging from any non-empty cell, INCLUDING specials, so the
             // player can drag a special onto an adjacent special to combo.
+            // Suitcases are excluded — they are not player-movable.
             if (Helper.IsInBounds(cell.row, cell.col, _board.Rows, _board.Cols) &&
-                !_board.Cells[cell.row, cell.col].IsEmpty)
+                !_board.Cells[cell.row, cell.col].IsEmpty &&
+                _board.Cells[cell.row, cell.col].elementType != ElementType.Suitcase)
             {
                 // If we have a selection, start drag from selected cell
                 if (_selectedCell.HasValue)

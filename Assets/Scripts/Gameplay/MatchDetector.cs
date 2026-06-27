@@ -105,24 +105,53 @@ public class MatchDetector
     }
 
     /// <summary>
-    /// Merge overlapping match groups so no cell appears in multiple groups.
+    /// Merge overlapping match groups so a T/L shape stays in ONE group.
+    /// Previously this filtered each match against already-used cells, which
+    /// dropped the vertical arm of a T (its shared cell was already claimed
+    /// by the horizontal run), leaving those cells uncleared and breaking
+    /// bomb/junction detection. Now any matches sharing a cell are unioned.
     /// </summary>
     private List<List<(int, int)>> MergeMatches(List<List<(int, int)>> matches)
     {
-        var merged = new List<List<(int, int)>>();
-        var used = new HashSet<(int, int)>();
+        var groups = new List<HashSet<(int, int)>>();
 
         foreach (var match in matches)
         {
-            var filtered = match.Where(cell => !used.Contains(cell)).ToList();
-            if (filtered.Count >= 3)
+            if (match.Count == 0) continue;
+
+            // Find existing groups that share any cell with this match.
+            var overlapping = new List<HashSet<(int, int)>>();
+            foreach (var g in groups)
             {
-                merged.Add(filtered);
-                foreach (var cell in filtered)
-                    used.Add(cell);
+                bool overlaps = false;
+                foreach (var cell in match)
+                {
+                    if (g.Contains(cell)) { overlaps = true; break; }
+                }
+                if (overlaps) overlapping.Add(g);
+            }
+
+            if (overlapping.Count == 0)
+            {
+                groups.Add(new HashSet<(int, int)>(match));
+            }
+            else
+            {
+                // Merge this match and all overlapping groups into the first.
+                var target = overlapping[0];
+                foreach (var cell in match) target.Add(cell);
+                for (int i = 1; i < overlapping.Count; i++)
+                {
+                    foreach (var cell in overlapping[i]) target.Add(cell);
+                    groups.Remove(overlapping[i]);
+                }
             }
         }
 
+        var merged = new List<List<(int, int)>>();
+        foreach (var g in groups)
+            if (g.Count >= 3)
+                merged.Add(new List<(int, int)>(g));
         return merged;
     }
 
@@ -175,92 +204,107 @@ public class MatchDetector
     }
 
     /// <summary>
-    /// Detect special-item patterns in the matched cells.
-    /// 4+ in a single line -> rocket (direction follows the line orientation).
-    /// T/L junctions at match intersections -> bomb.
-    /// Returns: (rocket cells with direction, bomb center cells)
+    /// Detect special-item patterns in the matched cells:
+    ///   - Bomb  : a cell at the intersection of a 3+ horizontal run and a 3+
+    ///             vertical run (a T or L of 5+ matched cells).
+    ///   - Propeller : a 5+ straight line with no bomb cell.
+    ///   - Rocket : a 4 straight line with no bomb cell.
+    /// A merged group that contains a bomb cell yields a bomb (not a rocket/
+    /// propeller) even if one of its arms is 4+/5+ long, which matches the
+    /// standard match-3 rule (T/L -> bomb takes priority).
+    /// Returns: (rocket cells with direction, bomb center cells, propeller cells).
     /// </summary>
-    public (List<(int row, int col, GameConfig.RocketDir dir)> rockets, List<(int row, int col)> bombs) DetectSpecialPatterns(List<List<(int, int)>> matches)
+    public (List<(int row, int col, GameConfig.RocketDir dir)> rockets,
+           List<(int row, int col)> bombs,
+           List<(int row, int col)> propellers) DetectSpecialPatterns(List<List<(int, int)>> matches)
     {
         var rockets = new List<(int, int, GameConfig.RocketDir)>();
         var bombs = new List<(int, int)>();
+        var propellers = new List<(int, int)>();
 
-        // Count how many matches each cell belongs to (for intersection detection)
-        var matchCount = new Dictionary<(int, int), int>();
         var matchedSet = new HashSet<(int, int)>();
         foreach (var match in matches)
-        {
             foreach (var cell in match)
-            {
-                if (!matchCount.ContainsKey(cell))
-                    matchCount[cell] = 0;
-                matchCount[cell]++;
                 matchedSet.Add(cell);
-            }
-        }
 
-        // Bombs: cells at T/L junctions (belong to 2+ matches with crossing arms)
+        // Bombs: intersection of a 3+ horizontal run and a 3+ vertical run.
         var bombCells = new HashSet<(int, int)>();
-        foreach (var kvp in matchCount)
+        foreach (var (r, c) in matchedSet)
         {
-            if (kvp.Value >= 2)
-            {
-                var (r, c) = kvp.Key;
-                if (IsTJunction(r, c, matchedSet) || IsLJunction(r, c, matchedSet))
-                    bombCells.Add((r, c));
-            }
+            if (HorizontalRunLength(r, c, matchedSet) >= 3 &&
+                VerticalRunLength(r, c, matchedSet) >= 3)
+                bombCells.Add((r, c));
         }
         bombs = new List<(int, int)>(bombCells);
 
-        // Rockets: any match of length >= 4 -> one rocket at a non-bomb cell.
-        // Direction follows the line: same row = horizontal, otherwise vertical.
+        // Rockets (4-line) and propellers (5+ line), but only for groups that
+        // do NOT contain a bomb cell.
         var rocketCells = new HashSet<(int, int)>();
+        var propellerCells = new HashSet<(int, int)>();
+
         foreach (var match in matches)
         {
-            if (match.Count < 4) continue;
+            bool hasBomb = false;
+            foreach (var cell in match)
+                if (bombCells.Contains(cell)) { hasBomb = true; break; }
+            if (hasBomb) continue;
 
-            bool horizontal = true;
-            for (int i = 1; i < match.Count; i++)
+            if (match.Count >= 5)
             {
-                if (match[i].Item1 != match[0].Item1) { horizontal = false; break; }
+                var chosen = ChooseSpecialCell(match, bombCells, propellerCells);
+                propellerCells.Add(chosen);
+                propellers.Add((chosen.Item1, chosen.Item2));
             }
-            var dir = horizontal ? GameConfig.RocketDir.Horizontal : GameConfig.RocketDir.Vertical;
-
-            // Prefer a cell that isn't already claimed as a bomb or rocket.
-            var chosen = match[0];
-            foreach (var c in match)
+            else if (match.Count >= 4)
             {
-                if (!bombCells.Contains(c) && !rocketCells.Contains(c))
-                {
-                    chosen = c;
-                    break;
-                }
+                bool horizontal = true;
+                for (int i = 1; i < match.Count; i++)
+                    if (match[i].Item1 != match[0].Item1) { horizontal = false; break; }
+                var dir = horizontal ? GameConfig.RocketDir.Horizontal : GameConfig.RocketDir.Vertical;
+                var chosen = ChooseSpecialCell(match, bombCells, rocketCells);
+                rocketCells.Add(chosen);
+                rockets.Add((chosen.Item1, chosen.Item2, dir));
             }
-            rocketCells.Add(chosen);
-            rockets.Add((chosen.Item1, chosen.Item2, dir));
         }
 
-        return (rockets, bombs);
+        return (rockets, bombs, propellers);
     }
 
-    private bool IsTJunction(int row, int col, HashSet<(int, int)> set)
+    /// <summary>Length of the consecutive matched run through (r,c) horizontally.</summary>
+    private int HorizontalRunLength(int r, int c, HashSet<(int, int)> set)
     {
-        bool left = Helper.IsInBounds(row, col - 1, _board.Rows, _board.Cols) && set.Contains((row, col - 1));
-        bool right = Helper.IsInBounds(row, col + 1, _board.Rows, _board.Cols) && set.Contains((row, col + 1));
-        bool up = Helper.IsInBounds(row - 1, col, _board.Rows, _board.Cols) && set.Contains((row - 1, col));
-        bool down = Helper.IsInBounds(row + 1, col, _board.Rows, _board.Cols) && set.Contains((row + 1, col));
-
-        int arms = (left ? 1 : 0) + (right ? 1 : 0) + (up ? 1 : 0) + (down ? 1 : 0);
-        return arms >= 3;
+        int count = 1;
+        for (int cc = c - 1; cc >= 0 && set.Contains((r, cc)); cc--) count++;
+        for (int cc = c + 1; cc < _board.Cols && set.Contains((r, cc)); cc++) count++;
+        return count;
     }
 
-    private bool IsLJunction(int row, int col, HashSet<(int, int)> set)
+    /// <summary>Length of the consecutive matched run through (r,c) vertically.</summary>
+    private int VerticalRunLength(int r, int c, HashSet<(int, int)> set)
     {
-        bool inHorizontal = (Helper.IsInBounds(row, col - 1, _board.Rows, _board.Cols) && set.Contains((row, col - 1))) ||
-                            (Helper.IsInBounds(row, col + 1, _board.Rows, _board.Cols) && set.Contains((row, col + 1)));
-        bool inVertical = (Helper.IsInBounds(row - 1, col, _board.Rows, _board.Cols) && set.Contains((row - 1, col))) ||
-                          (Helper.IsInBounds(row + 1, col, _board.Rows, _board.Cols) && set.Contains((row + 1, col)));
+        int count = 1;
+        for (int rr = r - 1; rr >= 0 && set.Contains((rr, c)); rr--) count++;
+        for (int rr = r + 1; rr < _board.Rows && set.Contains((rr, c)); rr++) count++;
+        return count;
+    }
 
-        return inHorizontal && inVertical;
+    /// <summary>
+    /// Pick a cell in the match that is not already claimed as a bomb or same
+    /// special type; falls back to match[0] (the cascade excludes special
+    /// cells from clearing, so a duplicate claim is harmless but we avoid it
+    /// for cleanliness).
+    /// </summary>
+    private (int, int) ChooseSpecialCell(List<(int, int)> match, HashSet<(int, int)> bombCells, HashSet<(int, int)> taken)
+    {
+        // Prefer the middle of the line for a centered placement.
+        int mid = match.Count / 2;
+        for (int off = 0; off < match.Count; off++)
+        {
+            int idx = (mid + off) % match.Count;
+            var c = match[idx];
+            if (!bombCells.Contains(c) && !taken.Contains(c))
+                return c;
+        }
+        return match[0];
     }
 }

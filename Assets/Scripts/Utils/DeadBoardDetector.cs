@@ -66,8 +66,10 @@ public class DeadBoardDetector
 
     /// <summary>
     /// A pair is player-swappable if neither cell holds a special item
-    /// (rocket/bomb). Suitcases and normal elements are both swappable by the
-    /// player, so they are included.
+    /// (rocket/bomb/propeller — those activate by tap/combo, not swap) or a
+    /// suitcase (suitcases are immovable). Normal×normal and normal×suitcase-
+    /// adjacencies are both considered, but suitcase-involving pairs are
+    /// skipped because the player cannot swap them.
     /// </summary>
     private bool IsPlayerSwappable(BoardController board, int r1, int c1, int r2, int c2)
     {
@@ -75,6 +77,8 @@ public class DeadBoardDetector
         if (board.Cells[r2, c2].IsEmpty) return false;
         if (board.Cells[r1, c1].HasSpecial) return false;
         if (board.Cells[r2, c2].HasSpecial) return false;
+        if (board.Cells[r1, c1].elementType == ElementType.Suitcase) return false;
+        if (board.Cells[r2, c2].elementType == ElementType.Suitcase) return false;
         return true;
     }
 
