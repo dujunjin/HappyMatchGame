@@ -237,7 +237,7 @@ public class WinSequence : MonoBehaviour
             beamSr.sprite = SpriteGenerator.CreateSquareSprite(new Color(1f, 0.85f, 0.4f));
             beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
             beamSr.sortingOrder = 50;
-            beam.transform.localScale = new Vector3(0.1f, 0.7f, 1f);
+            beam.transform.localScale = new Vector3(0.15f, 1.75f, 1f);
             _spawned.Add(beam);
         }
 
@@ -307,7 +307,7 @@ public class WinSequence : MonoBehaviour
         sr.sprite = SpriteGenerator.CreateCircleSprite(new Color(1f, 0.9f, 0.5f));
         sr.sortingOrder = 55;
         go.transform.position = origin;
-        go.transform.localScale = Vector3.one * 0.04f;
+        go.transform.localScale = Vector3.one * 0.1f;
         _spawned.Add(go);
 
         Vector3 vel = new Vector3(Random.Range(-1.2f, 1.2f), Random.Range(1f, 2.5f), 0f);
@@ -437,7 +437,7 @@ public class WinSequence : MonoBehaviour
         sr.sprite = SpriteGenerator.CreateCircleSprite(color);
         sr.sortingOrder = 55;
         go.transform.position = origin;
-        go.transform.localScale = Vector3.one * 0.06f;
+        go.transform.localScale = Vector3.one * 0.1f;
         _spawned.Add(go);
 
         Vector3 vel = dir * 2.2f;
@@ -475,7 +475,7 @@ public class WinSequence : MonoBehaviour
         sr.color = new Color(color.r, color.g, color.b, 0.85f);
         sr.sortingOrder = 53;
         go.transform.position = origin + (Vector3)Random.insideUnitCircle * 0.05f;
-        go.transform.localScale = new Vector3(0.04f, 0.35f, 1f);
+        go.transform.localScale = new Vector3(0.25f, 2.5f, 1f);
         go.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
         _spawned.Add(go);
 
@@ -510,7 +510,7 @@ public class WinSequence : MonoBehaviour
             Vector3 dir = new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f);
             bool coin = Random.value < 0.6f;
             Color c = coin ? new Color(1f, 0.83f, 0.2f) : RandomGemColor();
-            StartCoroutine(Treasure(mouth, dir * Random.Range(4f, 6f), c, coin ? 0.09f : 0.1f, false));
+            StartCoroutine(Treasure(mouth, dir * Random.Range(4f, 6f), c, coin ? 0.6f : 0.7f, false));
         }
 
         yield return new WaitForSeconds(0.2f);
@@ -524,7 +524,7 @@ public class WinSequence : MonoBehaviour
             {
                 float ang = 90f + Random.Range(-25f, 25f);
                 Vector3 dir = new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f);
-                StartCoroutine(Treasure(mouth, dir * Random.Range(2.5f, 3.5f), RandomGemColor(), 0.15f, true));
+                StartCoroutine(Treasure(mouth, dir * Random.Range(2.5f, 3.5f), RandomGemColor(), 1.2f, true));
             }
             yield return new WaitForSeconds(Random.Range(0.1f, 0.15f));
         }
