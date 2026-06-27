@@ -38,8 +38,9 @@ public class SnowField : MonoBehaviour
         Sprite rain = SpriteGenerator.CreateSquareSprite(new Color(0.7f, 0.8f, 0.95f, 0.5f));
 
         // Back layer: far, small + dense. Front layer: near, large + soft.
+        // Both behind the board (sortingOrder < 1) so snow never obscures pieces.
         SpawnLayer(snow, backCount, slow: true, sortingOrder: -5);
-        SpawnLayer(snow, frontCount, slow: false, sortingOrder: 10);
+        SpawnLayer(snow, frontCount, slow: false, sortingOrder: 0);
         SpawnRain(rain, rainCount);
     }
 
@@ -77,7 +78,7 @@ public class SnowField : MonoBehaviour
             GameObject go = new GameObject("Rain");
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
-            sr.sortingOrder = 9;
+            sr.sortingOrder = 0; // behind the board cells (1)
             sr.color = new Color(0.7f, 0.8f, 0.95f, Random.Range(0.25f, 0.45f));
             go.transform.localScale = new Vector3(0.015f, 0.35f, 1f); // thin streak
             go.transform.rotation = Quaternion.Euler(0f, 0f, 8f); // slight diagonal

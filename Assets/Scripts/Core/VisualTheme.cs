@@ -36,7 +36,7 @@ public class VisualTheme : ScriptableObject
     private readonly Dictionary<Color, Sprite> _rocketCache = new Dictionary<Color, Sprite>();
     private readonly Dictionary<Color, Sprite> _bombCache = new Dictionary<Color, Sprite>();
     private readonly Dictionary<Color, Sprite> _propellerCache = new Dictionary<Color, Sprite>();
-    // Phase E: distinct outline per element (hat/snowflake/star/tree), cached
+    // Phase E: distinct outline per element (stocking/snowflake/star/tree), cached
     // per type so repeated requests don't regenerate the texture.
     private Sprite _redShape, _blueShape, _yellowShape, _greenShape;
 
@@ -75,7 +75,7 @@ public class VisualTheme : ScriptableObject
         switch (type)
         {
             case ElementType.Red:
-                return spriteRed ?? (_redShape ?? (_redShape = SpriteGenerator.CreateHatSprite(colorRed)));
+                return spriteRed ?? (_redShape ?? (_redShape = SpriteGenerator.CreateStockingSprite(colorRed)));
             case ElementType.Blue:
                 return spriteBlue ?? (_blueShape ?? (_blueShape = SpriteGenerator.CreateSnowflakeSprite(colorBlue)));
             case ElementType.Yellow:

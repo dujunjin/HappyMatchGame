@@ -160,6 +160,47 @@ public static class SpriteGenerator
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
 
+    /// <summary>Red element: a Christmas stocking (leg + foot + white cuff + hanging loop).</summary>
+    public static Sprite CreateStockingSprite(Color color, int size = 64)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+        Color white = new Color(0.96f, 0.96f, 0.96f, 1f);
+        Color dark = new Color(color.r * 0.7f, color.g * 0.7f, color.b * 0.7f, 1f);
+        Vector2 heelC = new Vector2(27, 23); float heelR = 6f;
+        Vector2 toeC = new Vector2(50, 23); float toeR = 6f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 p = new Vector2(x, y);
+                Color c = Color.clear;
+
+                // Leg (vertical tube).
+                if (x >= 27 && x <= 39 && y >= 26 && y <= 52) c = color;
+                // Foot (horizontal, extends right from the bottom of the leg).
+                if (x >= 27 && x <= 50 && y >= 18 && y <= 28) c = color;
+                // Rounded heel + toe.
+                if (Vector2.Distance(p, heelC) <= heelR && p.x <= 27) c = color;
+                if (Vector2.Distance(p, toeC) <= toeR && p.x >= 50) c = color;
+                // Shadow stripe on the leg for depth.
+                if (x >= 36 && x <= 38 && y >= 28 && y <= 50) c = dark;
+
+                // White cuff at the top of the leg.
+                if (x >= 25 && x <= 41 && y >= 50 && y <= 56) c = white;
+                // Hanging loop.
+                if (x >= 32 && x <= 34 && y >= 56 && y <= 61) c = white;
+                if (x >= 32 && x <= 34 && y == 61) c = Color.clear;
+                if (x >= 31 && x <= 35 && y == 56) c = white;
+
+                tex.SetPixel(x, y, c);
+            }
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
+
     // --- geometry helpers ---
 
     private static float DistToSegment(Vector2 p, Vector2 a, Vector2 b)

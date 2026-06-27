@@ -90,6 +90,10 @@ public class GameManager : MonoBehaviour
         CellData[,] grid = BoardGenerator.Generate(levelConfig);
         boardController.InitializeBoard(grid);
 
+        // Phase E: a dark semi-transparent backdrop behind the board so the
+        // (busy, bright) Christmas scene doesn't obscure the pieces.
+        CreateBoardBackdrop();
+
         // Systems
         matchDetector = new MatchDetector();
         swapHandler = new SwapHandler();
@@ -208,8 +212,38 @@ public class GameManager : MonoBehaviour
         Flow.SetState(GameState.Idle);
     }
 
-    private BoardController FindOrCreateBoardController()
+    /// <summary>
+    /// A dark semi-transparent quad sized to the board, at sortingOrder 0
+    /// (behind the cells at 1, in front of the Christmas scene at &lt;0). Mutes
+    /// the busy background exactly where the pieces are so they pop.
+    /// </summary>
+    private void CreateBoardBackdrop()
     {
+        if (boardController == null) return;
+        float spacing = boardController.cellSize + boardController.cellGap;
+        int rows = boardController.Rows, cols = boardController.Cols;
+        Vector3 o = boardController.boardOrigin;
+        float xMin = o.x - spacing * 0.5f;
+        float xMax = o.x + (cols - 1) * spacing + spacing * 0.5f;
+        float yMax = o.y + spacing * 0.5f;
+        float yMin = o.y - (rows - 1) * spacing - spacing * 0.5f;
+        Vector3 center = new Vector3((xMin + xMax) * 0.5f, (yMin + yMax) * 0.5f, 0f);
+        float w = (xMax - xMin) + 0.5f;
+        float h = (yMax - yMin) + 0.5f;
+
+        GameObject go = new GameObject("BoardBackdrop");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateSquareSprite(Color.white);
+        sr.sortingOrder = -1; // behind front snow (0) + board cells (1), in front of scene (<=-5)
+        // Deep night blue, mostly opaque.
+        sr.color = new Color(0.04f, 0.06f, 0.14f, 0.78f);
+        go.transform.position = center;
+        const float ppu = 100f;
+        float sw = 16f / ppu; // CreateSquareSprite default size 16 -> 0.16 world
+        go.transform.localScale = new Vector3(w / sw, h / sw, 1f);
+    }
+
+    private BoardController FindOrCreateBoardController()    {
         var bc = FindObjectOfType<BoardController>();
         if (bc == null)
         {
