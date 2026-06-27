@@ -4,14 +4,21 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Coroutine-based animation helpers for tweening transforms.
+///
+/// Every coroutine is null-safe: if the target Transform/GameObject is
+/// destroyed mid-tween (e.g. a special item is consumed while its PopIn is
+/// still running, or the scene reloads), the coroutine bails out instead of
+/// throwing MissingReferenceException.
 /// </summary>
 public static class AnimationHelper
 {
     public static IEnumerator TweenPosition(Transform target, Vector3 from, Vector3 to, float duration)
     {
+        if (target == null) yield break;
         float elapsed = 0f;
         while (elapsed < duration)
         {
+            if (target == null) yield break;
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             // Ease out quad
@@ -19,7 +26,7 @@ public static class AnimationHelper
             target.position = Vector3.Lerp(from, to, t);
             yield return null;
         }
-        target.position = to;
+        if (target != null) target.position = to;
     }
 
     /// <summary>
@@ -54,26 +61,31 @@ public static class AnimationHelper
 
     public static IEnumerator TweenScale(Transform target, Vector3 from, Vector3 to, float duration)
     {
+        if (target == null) yield break;
         float elapsed = 0f;
         while (elapsed < duration)
         {
+            if (target == null) yield break;
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
             t = 1f - (1f - t) * (1f - t);
             target.localScale = Vector3.Lerp(from, to, t);
             yield return null;
         }
-        target.localScale = to;
+        if (target != null) target.localScale = to;
     }
 
     public static IEnumerator ShrinkAndDestroy(GameObject obj, float duration)
     {
-        yield return TweenScale(obj.transform, Vector3.one, Vector3.zero, duration);
-        Object.Destroy(obj);
+        if (obj == null) yield break;
+        Transform tr = obj.transform;
+        yield return TweenScale(tr, Vector3.one, Vector3.zero, duration);
+        if (obj != null) Object.Destroy(obj);
     }
 
     public static IEnumerator PopIn(GameObject obj, float duration)
     {
+        if (obj == null) yield break;
         obj.transform.localScale = Vector3.zero;
         yield return TweenScale(obj.transform, Vector3.zero, Vector3.one, duration);
     }

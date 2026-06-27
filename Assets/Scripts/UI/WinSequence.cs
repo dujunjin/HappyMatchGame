@@ -11,20 +11,29 @@ using TMPro;
 ///   1. Board exit (0.45s scale-down + fade + slide down).
 ///   2. "Great" text appearing with a 0.24s elastic (back-out) curve, and a
 ///      background brighten.
-///   3. A treasure chest (body + hinged lid) scales in at screen center, the
-///      lid swings open with a white flash, and ribbons (long thin colored
-///      strips) spray up out of it while fireworks (starburst bursts) pop at
-///      random positions above, plus a brief camera shake.
+///   3. Treasure chest opening in four sub-phases:
+///        a. Seal-break: lid lifts to 70° with a golden light beam leaking
+///           from the crack, body tremor, gold sparks; a brief stutter
+///           (resistance), then a snap open + a soft gold shockwave ring.
+///        b. Bloom: 3-5 chrysanthemum fireworks shoot up and burst (main
+///           rays + secondary star points), and 6-10 ribbons spiral out on
+///           sine-wave paths with decaying spin/velocity.
+///        c. Treasure surge: a burst-wave of coins/small gems, then waves of
+///           large gems arcing out with low-gravity hover and a bounce.
+///        d. Aftermath: chest glow dims to a faint pulse; effects fade.
 ///   4. Retry / Replay buttons. Replay re-runs the finale; Retry reloads.
 /// Lose still uses the simple ResultDialog (this sequence is win-only).
-/// Chest/ribbons/fireworks are procedural sprites here; Phase E will upgrade
-/// them to pooled particles and add the win sound.
+/// All art is procedural; Phase E will upgrade to pooled particles + sound.
 /// </summary>
 public class WinSequence : MonoBehaviour
 {
     private GameManager _gm;
     private Canvas _canvas;
     private readonly List<GameObject> _spawned = new List<GameObject>();
+
+    private Transform _lidHinge;
+    private Transform _chestBody;
+    private SpriteRenderer _chestGlow;
 
     public void Init(GameManager gm) { _gm = gm; }
 
@@ -33,15 +42,11 @@ public class WinSequence : MonoBehaviour
     private IEnumerator Sequence()
     {
         CreateCanvas();
-
-        // 1. Board exit.
         yield return BoardExit(0.45f);
-
-        // 2-4. Finale.
         yield return Finale();
     }
 
-    /// <summary>Re-run just the finale (Great + burst + buttons).</summary>
+    /// <summary>Re-run just the finale (Great + chest + buttons).</summary>
     public void Replay()
     {
         CleanupSpawned();
@@ -53,9 +58,7 @@ public class WinSequence : MonoBehaviour
         ShowGreatText();
         BrightenBackground();
         yield return new WaitForSeconds(0.24f);
-
         yield return OpenChestBurst();
-
         ShowButtons();
     }
 
@@ -80,7 +83,7 @@ public class WinSequence : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             float k = Mathf.Clamp01(elapsed / dur);
-            float e = 1f - (1f - k) * (1f - k); // ease-out quad
+            float e = 1f - (1f - k) * (1f - k);
             t.localScale = Vector3.Lerp(baseScale, baseScale * 0.8f, e);
             t.position = basePos + Vector3.down * (3f * e);
             for (int i = 0; i < renderers.Length; i++)
@@ -141,50 +144,66 @@ public class WinSequence : MonoBehaviour
         }
     }
 
-    // ---------------------------------------------------------------------
-    //  Chest open + ribbons + fireworks
-    // ---------------------------------------------------------------------
-
-    private Transform _lidHinge;
+    // =====================================================================
+    //  Chest open — 4 phases
+    // =====================================================================
 
     private IEnumerator OpenChestBurst()
     {
-        // Chest (body + hinged lid) appears at screen center.
         GameObject chest = CreateChest();
         chest.transform.position = new Vector3(0f, -0.2f, 0f);
         chest.transform.localScale = Vector3.zero;
         _spawned.Add(chest);
 
         // Pop the chest in.
-        yield return ScaleTo(chest.transform, 2.5f, 0.3f);
+        yield return ScaleTo(chest.transform, 2.5f, 0.25f);
 
-        // White flash at the lid seam as it opens.
-        StartCoroutine(OpenFlash(chest.transform.position));
+        // Mouth = lid seam (where effects emerge). Chest root is at y=-0.2,
+        // hinge at local y=0 -> world y=-0.2; "mouth" just above the seam.
+        Vector3 mouth = chest.transform.position + new Vector3(0f, 0.05f, 0f);
 
-        // Swing the lid open.
-        if (_lidHinge != null)
-            yield return OpenLid(_lidHinge, 0.3f);
+        // Phase 1: seal-break (lid lift + beam + tremor + sparks + snap + shockwave).
+        yield return LiftLid(mouth);
 
-        // Spray ribbons from inside + launch fireworks above (concurrent).
-        Vector3 mouth = chest.transform.position + new Vector3(0f, 0.3f, 0f);
-        SpawnRibbons(28, mouth);
-        StartCoroutine(FireworksSequence(7, 1.3f));
+        // Phase 2: bloom (fireworks + spiral ribbons), concurrent.
+        StartCoroutine(FireworksBloom(mouth, 4));
+        StartCoroutine(RibbonsSpiral(mouth, 8));
+        StartCoroutine(CameraShake(0.22f));
 
-        yield return CameraShake(0.22f);
+        // Phase 3: treasure surge, overlapping phase 2's tail.
+        yield return new WaitForSeconds(0.15f);
+        StartCoroutine(TreasureSurge(mouth));
+
+        // Let phases 2 + 3 play out.
+        yield return new WaitForSeconds(1.1f);
+
+        // Phase 4: aftermath — chest glow dims to a faint pulse.
+        StartCoroutine(ChestGlowPulse());
+        yield return new WaitForSeconds(0.7f);
     }
 
     private GameObject CreateChest()
     {
         GameObject root = new GameObject("Chest");
 
-        // Body.
+        // Glow behind the chest (phase 4 pulse).
+        GameObject glow = new GameObject("Glow");
+        glow.transform.SetParent(root.transform, false);
+        SpriteRenderer gsr = glow.AddComponent<SpriteRenderer>();
+        gsr.sprite = SpriteGenerator.CreateCircleSprite(new Color(1f, 0.8f, 0.3f, 0.45f));
+        gsr.sortingOrder = 49;
+        glow.transform.localPosition = new Vector3(0f, -0.1f, 0f);
+        glow.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
+        _chestGlow = gsr;
+
+        // Body (80x56 sprite, 0.80x0.56 world @100PPU).
         GameObject body = new GameObject("Body");
         body.transform.SetParent(root.transform, false);
         SpriteRenderer bsr = body.AddComponent<SpriteRenderer>();
         bsr.sprite = SpriteGenerator.CreateChestBodySprite();
         bsr.sortingOrder = 51;
-        // Body sprite is 80x56 (0.80x0.56 world @100PPU). Center it below the seam.
         body.transform.localPosition = new Vector3(0f, -0.28f, 0f);
+        _chestBody = body.transform;
 
         // Lid hinge at the top seam of the body.
         GameObject hinge = new GameObject("LidHinge");
@@ -192,164 +211,413 @@ public class WinSequence : MonoBehaviour
         hinge.transform.localPosition = new Vector3(0f, 0f, 0f);
         _lidHinge = hinge.transform;
 
-        // Lid (child of hinge) extends upward when closed.
+        // Lid (80x28 sprite) extends upward from the hinge when closed.
         GameObject lid = new GameObject("Lid");
         lid.transform.SetParent(hinge.transform, false);
         SpriteRenderer lsr = lid.AddComponent<SpriteRenderer>();
         lsr.sprite = SpriteGenerator.CreateChestLidSprite();
         lsr.sortingOrder = 52;
-        // Lid sprite is 80x28 (0.80x0.28 world). Place so its bottom sits at the hinge.
         lid.transform.localPosition = new Vector3(0f, 0.14f, 0f);
 
         return root;
     }
 
-    private IEnumerator OpenLid(Transform hinge, float dur)
+    // --- Phase 1: seal-break ---
+
+    private IEnumerator LiftLid(Vector3 mouth)
     {
-        Quaternion from = hinge.localRotation;
-        // Swing the lid up and back (-110° around z reads as "opened backward").
-        Quaternion to = Quaternion.Euler(0f, 0f, -110f);
-        float elapsed = 0f;
-        while (elapsed < dur)
+        // Gold light beam leaking from the crack (sibling of hinge, at the seam).
+        SpriteRenderer beamSr = null;
+        if (_lidHinge != null && _lidHinge.parent != null)
         {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / dur);
-            float e = 1f - (1f - t) * (1f - t); // ease-out
-            hinge.localRotation = Quaternion.Slerp(from, to, e);
+            GameObject beam = new GameObject("Beam");
+            beam.transform.SetParent(_lidHinge.parent, false);
+            beam.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            beamSr = beam.AddComponent<SpriteRenderer>();
+            beamSr.sprite = SpriteGenerator.CreateSquareSprite(new Color(1f, 0.85f, 0.4f));
+            beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
+            beamSr.sortingOrder = 50;
+            beam.transform.localScale = new Vector3(0.1f, 0.7f, 1f);
+            _spawned.Add(beam);
+        }
+
+        Vector3 bodyBase = _chestBody != null ? _chestBody.localPosition : Vector3.zero;
+
+        // 1a: slow lift 0 -> 70°.
+        float e = 0f;
+        while (e < 0.12f)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / 0.12f);
+            float angle = Mathf.Lerp(0f, -70f, t);
+            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
+            SetBeam(beamSr, Mathf.Abs(angle));
+            Tremor(_chestBody, bodyBase, 0.012f);
+            if (Random.value < 0.4f) StartCoroutine(Spark(mouth));
             yield return null;
         }
-        hinge.localRotation = to;
+
+        // 1b: stutter near 70° (resistance).
+        e = 0f;
+        while (e < 0.07f)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / 0.07f);
+            float angle = -70f + Mathf.Sin(t * 40f) * 2.5f;
+            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
+            SetBeam(beamSr, 70f);
+            Tremor(_chestBody, bodyBase, 0.02f);
+            yield return null;
+        }
+
+        // 1c: snap to ~118°.
+        e = 0f;
+        while (e < 0.05f)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / 0.05f);
+            float angle = Mathf.Lerp(-70f, -118f, t);
+            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
+            SetBeam(beamSr, Mathf.Abs(angle));
+            yield return null;
+        }
+
+        // Snap complete: shockwave + hide beam.
+        if (beamSr != null) beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
+        StartCoroutine(Shockwave(mouth));
     }
+
+    private void SetBeam(SpriteRenderer sr, float angle)
+    {
+        if (sr == null) return;
+        float k = Mathf.Clamp01(angle / 118f);
+        sr.color = new Color(1f, 0.85f, 0.4f, k * 0.85f);
+    }
+
+    private void Tremor(Transform body, Vector3 basePos, float amp)
+    {
+        if (body == null) return;
+        body.localPosition = basePos + (Vector3)Random.insideUnitCircle * amp;
+    }
+
+    private IEnumerator Spark(Vector3 origin)
+    {
+        GameObject go = new GameObject("Spark");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateCircleSprite(new Color(1f, 0.9f, 0.5f));
+        sr.sortingOrder = 55;
+        go.transform.position = origin;
+        go.transform.localScale = Vector3.one * 0.04f;
+        _spawned.Add(go);
+
+        Vector3 vel = new Vector3(Random.Range(-1.2f, 1.2f), Random.Range(1f, 2.5f), 0f);
+        float life = 0.4f;
+        float e = 0f;
+        while (e < life && go != null)
+        {
+            e += Time.deltaTime;
+            vel.y -= 5f * Time.deltaTime;
+            go.transform.position += vel * Time.deltaTime;
+            if (sr != null) sr.color = new Color(1f, 0.9f, 0.5f, 1f - e / life);
+            yield return null;
+        }
+        if (go != null) { _spawned.Remove(go); Destroy(go); }
+    }
+
+    private IEnumerator Shockwave(Vector3 origin)
+    {
+        GameObject go = new GameObject("Shockwave");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateCircleSprite(new Color(1f, 0.8f, 0.3f, 0.5f));
+        sr.sortingOrder = 49;
+        go.transform.position = origin;
+        go.transform.localScale = Vector3.one * 0.3f;
+        _spawned.Add(go);
+
+        float dur = 0.5f;
+        float e = 0f;
+        while (e < dur && go != null)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / dur);
+            go.transform.localScale = Vector3.one * (0.3f + 4f * t);
+            if (sr != null) sr.color = new Color(1f, 0.8f, 0.3f, 0.5f * (1f - t));
+            yield return null;
+        }
+        if (go != null) { _spawned.Remove(go); Destroy(go); }
+    }
+
+    // --- Phase 2: bloom (chrysanthemum fireworks + spiral ribbons) ---
+
+    private IEnumerator FireworksBloom(Vector3 origin, int count)
+    {
+        Color[] palette = new Color[] {
+            new Color(1f, 0.8f, 0.2f),  // gold
+            new Color(1f, 0.3f, 0.3f),  // red
+            new Color(0.7f, 0.4f, 1f),  // purple
+            new Color(0.5f, 0.9f, 1f),  // cyan accent
+        };
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 apex = origin + new Vector3(Random.Range(-1.6f, 1.6f), Random.Range(2.5f, 3.5f), 0f);
+            Color c = palette[Random.Range(0, palette.Length)];
+            StartCoroutine(ChrysanthemumBurst(origin, apex, c));
+            if (i < count - 1) yield return new WaitForSeconds(0.08f);
+        }
+    }
+
+    private IEnumerator ChrysanthemumBurst(Vector3 origin, Vector3 apex, Color color)
+    {
+        // Streak up.
+        yield return Streak(origin, apex, color, 0.35f);
+
+        // Burst at apex: main rays (starburst) + secondary star points.
+        GameObject burst = new GameObject("Chrysanthemum");
+        SpriteRenderer sr = burst.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateStarburstSprite(128, 7);
+        sr.color = color;
+        sr.sortingOrder = 54;
+        burst.transform.position = apex;
+        burst.transform.localScale = Vector3.zero;
+        _spawned.Add(burst);
+
+        int rays = 7;
+        for (int i = 0; i < rays; i++)
+        {
+            float ang = (i * (360f / rays) + Random.Range(-12f, 12f)) * Mathf.Deg2Rad;
+            Vector3 dir = new Vector3(Mathf.Cos(ang), Mathf.Sin(ang), 0f);
+            StartCoroutine(StarPoint(apex, dir, color));
+        }
+
+        float dur = 0.5f;
+        float e = 0f;
+        while (e < dur && burst != null)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / dur);
+            burst.transform.localScale = Vector3.one * (2f * t);
+            if (sr != null) sr.color = new Color(color.r, color.g, color.b, 1f - t);
+            yield return null;
+        }
+        if (burst != null) { _spawned.Remove(burst); Destroy(burst); }
+    }
+
+    private IEnumerator Streak(Vector3 from, Vector3 to, Color color, float dur)
+    {
+        GameObject go = new GameObject("Streak");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateSquareSprite(color);
+        sr.sortingOrder = 53;
+        go.transform.position = from;
+        Vector3 dir = to - from;
+        if (dir.sqrMagnitude > 0.0001f)
+        {
+            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            go.transform.rotation = Quaternion.Euler(0f, 0f, angle);
+        }
+        go.transform.localScale = new Vector3(2.5f, 0.25f, 1f); // elongated
+        _spawned.Add(go);
+
+        float e = 0f;
+        while (e < dur && go != null)
+        {
+            e += Time.deltaTime;
+            float t = Mathf.Clamp01(e / dur);
+            go.transform.position = Vector3.Lerp(from, to, t);
+            if (sr != null) sr.color = new Color(color.r, color.g, color.b, 1f - t * 0.6f);
+            yield return null;
+        }
+        if (go != null) { _spawned.Remove(go); Destroy(go); }
+    }
+
+    private IEnumerator StarPoint(Vector3 origin, Vector3 dir, Color color)
+    {
+        GameObject go = new GameObject("Star");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateCircleSprite(color);
+        sr.sortingOrder = 55;
+        go.transform.position = origin;
+        go.transform.localScale = Vector3.one * 0.06f;
+        _spawned.Add(go);
+
+        Vector3 vel = dir * 2.2f;
+        float life = 0.55f;
+        float e = 0f;
+        while (e < life && go != null)
+        {
+            e += Time.deltaTime;
+            vel *= (1f - Time.deltaTime * 1.8f);
+            go.transform.position += vel * Time.deltaTime;
+            if (sr != null) sr.color = new Color(color.r, color.g, color.b, 1f - e / life);
+            yield return null;
+        }
+        if (go != null) { _spawned.Remove(go); Destroy(go); }
+    }
+
+    private IEnumerator RibbonsSpiral(Vector3 origin, int count)
+    {
+        Color[] palette = new Color[] {
+            new Color(0.9f, 0.3f, 0.4f), new Color(0.95f, 0.75f, 0.3f),
+            new Color(0.4f, 0.6f, 0.95f), new Color(0.5f, 0.85f, 0.6f),
+        };
+        for (int i = 0; i < count; i++)
+        {
+            StartCoroutine(RibbonSpiral(origin, palette[Random.Range(0, palette.Length)]));
+            if (i < count - 1) yield return new WaitForSeconds(0.04f);
+        }
+    }
+
+    private IEnumerator RibbonSpiral(Vector3 origin, Color color)
+    {
+        GameObject go = new GameObject("Ribbon");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateSquareSprite(color);
+        sr.color = new Color(color.r, color.g, color.b, 0.85f);
+        sr.sortingOrder = 53;
+        go.transform.position = origin + (Vector3)Random.insideUnitCircle * 0.05f;
+        go.transform.localScale = new Vector3(0.04f, 0.35f, 1f);
+        go.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+        _spawned.Add(go);
+
+        Vector3 vel = new Vector3(Random.Range(-1.2f, 1.2f), Random.Range(3.5f, 5f), 0f);
+        float spin = Random.Range(-360f, 360f);
+        float phase = Random.Range(0f, 6.28f);
+        float life = 1.8f;
+        float e = 0f;
+        while (e < life && go != null)
+        {
+            e += Time.deltaTime;
+            float sine = Mathf.Sin(e * 5f + phase) * 0.6f;
+            vel.y -= 2.5f * Time.deltaTime;
+            vel *= (1f - Time.deltaTime * 0.5f);
+            spin *= (1f - Time.deltaTime * 0.6f);
+            go.transform.position += (vel + new Vector3(sine, 0f, 0f)) * Time.deltaTime;
+            go.transform.Rotate(0f, 0f, spin * Time.deltaTime);
+            if (sr != null) sr.color = new Color(color.r, color.g, color.b, 0.85f * (1f - e / life));
+            yield return null;
+        }
+        if (go != null) { _spawned.Remove(go); Destroy(go); }
+    }
+
+    // --- Phase 3: treasure surge ---
+
+    private IEnumerator TreasureSurge(Vector3 mouth)
+    {
+        // Burst wave: coins + small gems, high velocity, +-30° spread.
+        for (int i = 0; i < 14; i++)
+        {
+            float ang = 90f + Random.Range(-30f, 30f);
+            Vector3 dir = new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f);
+            bool coin = Random.value < 0.6f;
+            Color c = coin ? new Color(1f, 0.83f, 0.2f) : RandomGemColor();
+            StartCoroutine(Treasure(mouth, dir * Random.Range(4f, 6f), c, coin ? 0.09f : 0.1f, false));
+        }
+
+        yield return new WaitForSeconds(0.2f);
+
+        // Surge flow: waves of large gems with low-gravity hover.
+        int waves = 5;
+        for (int w = 0; w < waves; w++)
+        {
+            int n = Random.Range(2, 4);
+            for (int i = 0; i < n; i++)
+            {
+                float ang = 90f + Random.Range(-25f, 25f);
+                Vector3 dir = new Vector3(Mathf.Cos(ang * Mathf.Deg2Rad), Mathf.Sin(ang * Mathf.Deg2Rad), 0f);
+                StartCoroutine(Treasure(mouth, dir * Random.Range(2.5f, 3.5f), RandomGemColor(), 0.15f, true));
+            }
+            yield return new WaitForSeconds(Random.Range(0.1f, 0.15f));
+        }
+    }
+
+    private Color RandomGemColor()
+    {
+        Color[] gems = new Color[] {
+            new Color(0.7f, 0.95f, 1f),  // diamond
+            new Color(1f, 0.3f, 0.4f),   // ruby
+            new Color(0.3f, 0.9f, 0.5f), // emerald
+            new Color(0.85f, 0.85f, 0.95f), // silver
+        };
+        return gems[Random.Range(0, gems.Length)];
+    }
+
+    private IEnumerator Treasure(Vector3 origin, Vector3 vel, Color color, float size, bool lowGravity)
+    {
+        GameObject go = new GameObject("Treasure");
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = SpriteGenerator.CreateSquareSprite(color);
+        sr.sortingOrder = 56;
+        go.transform.position = origin;
+        go.transform.localScale = Vector3.one * size;
+        go.transform.rotation = Quaternion.Euler(0f, 0f, 45f); // diamond-ish
+        _spawned.Add(go);
+
+        float spin = Random.Range(-540f, 540f);
+        float life = 2.2f;
+        float e = 0f;
+        bool bounced = false;
+        while (e < life && go != null)
+        {
+            e += Time.deltaTime;
+            float grav = lowGravity ? 3f : 5f;
+            vel.y -= grav * Time.deltaTime;
+            // Hover: decelerate downward velocity near the apex.
+            if (vel.y < 0f && vel.y > -1.5f) vel.y *= (1f - Time.deltaTime * 0.6f);
+            go.transform.position += vel * Time.deltaTime;
+            go.transform.Rotate(0f, 0f, spin * Time.deltaTime);
+            spin *= (1f - Time.deltaTime * 0.3f);
+
+            // Bounce off the "ground".
+            if (go.transform.position.y < -2.8f && vel.y < 0f && !bounced)
+            {
+                vel.y = -vel.y * 0.4f;
+                vel.x *= 0.6f;
+                bounced = true;
+            }
+
+            float a = e > life - 0.5f ? (1f - (e - (life - 0.5f)) / 0.5f) : 1f;
+            if (sr != null) sr.color = new Color(color.r, color.g, color.b, a);
+            yield return null;
+        }
+        if (go != null) { _spawned.Remove(go); Destroy(go); }
+    }
+
+    // --- Phase 4: aftermath ---
+
+    private IEnumerator ChestGlowPulse()
+    {
+        if (_chestGlow == null) yield break;
+        float dur = 1.2f;
+        float e = 0f;
+        while (e < dur)
+        {
+            e += Time.deltaTime;
+            float t = e / dur;
+            float pulse = 0.15f + 0.1f * Mathf.Sin(t * 8f);
+            float a = Mathf.Lerp(0.45f, pulse, t);
+            if (_chestGlow != null) _chestGlow.color = new Color(1f, 0.8f, 0.3f, a);
+            yield return null;
+        }
+    }
+
+    // =====================================================================
+    //  Shared helpers
+    // =====================================================================
 
     private IEnumerator ScaleTo(Transform t, float target, float dur)
     {
+        if (t == null) yield break;
         Vector3 start = t.localScale;
         Vector3 end = Vector3.one * target;
         float elapsed = 0f;
-        while (elapsed < dur)
+        while (elapsed < dur && t != null)
         {
             elapsed += Time.deltaTime;
             float k = Mathf.Clamp01(elapsed / dur);
             t.localScale = Vector3.Lerp(start, end, BackOut(k));
             yield return null;
         }
-        t.localScale = end;
-    }
-
-    private IEnumerator OpenFlash(Vector3 pos)
-    {
-        GameObject go = new GameObject("OpenFlash");
-        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = SpriteGenerator.CreateCircleSprite(Color.white);
-        sr.color = new Color(1f, 0.95f, 0.7f, 0.9f);
-        sr.sortingOrder = 55;
-        go.transform.position = pos;
-        go.transform.localScale = Vector3.zero;
-        _spawned.Add(go);
-
-        float dur = 0.25f;
-        float elapsed = 0f;
-        while (elapsed < dur)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / dur);
-            go.transform.localScale = Vector3.one * (1.6f * t);
-            sr.color = new Color(1f, 0.95f, 0.7f, 0.9f * (1f - t));
-            yield return null;
-        }
-        _spawned.Remove(go);
-        Destroy(go);
-    }
-
-    private void SpawnRibbons(int n, Vector3 origin)
-    {
-        Sprite ribbonSprite = SpriteGenerator.CreateSquareSprite(Color.white);
-        Color[] palette = new Color[] {
-            new Color(1f, 0.3f, 0.3f), new Color(1f, 0.85f, 0.2f),
-            new Color(0.4f, 0.7f, 1f), new Color(0.5f, 1f, 0.5f),
-            new Color(1f, 0.5f, 1f),
-        };
-        for (int i = 0; i < n; i++)
-        {
-            GameObject go = new GameObject("Ribbon");
-            SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = ribbonSprite;
-            sr.color = palette[Random.Range(0, palette.Length)];
-            sr.sortingOrder = 53;
-            go.transform.position = origin + (Vector3)Random.insideUnitCircle * 0.1f;
-            // Long thin strip.
-            go.transform.localScale = new Vector3(0.05f, 0.4f, 1f);
-            go.transform.rotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
-            _spawned.Add(go);
-            StartCoroutine(RibbonFly(go, sr));
-        }
-    }
-
-    private IEnumerator RibbonFly(GameObject go, SpriteRenderer sr)
-    {
-        // Upward burst velocity with spread.
-        Vector3 vel = new Vector3(Random.Range(-3f, 3f), Random.Range(4f, 7.5f), 0f);
-        float life = 1.6f;
-        float elapsed = 0f;
-        Color c = sr != null ? sr.color : Color.white;
-        float spin = Random.Range(-720f, 720f);
-        while (elapsed < life && go != null)
-        {
-            elapsed += Time.deltaTime;
-            vel.y -= 6f * Time.deltaTime; // gravity
-            go.transform.position += vel * Time.deltaTime;
-            go.transform.Rotate(0f, 0f, spin * Time.deltaTime);
-            if (sr != null) sr.color = new Color(c.r, c.g, c.b, 1f - elapsed / life);
-            yield return null;
-        }
-        if (go != null)
-        {
-            _spawned.Remove(go);
-            Destroy(go);
-        }
-    }
-
-    private IEnumerator FireworksSequence(int count, float totalDuration)
-    {
-        Sprite burstSprite = SpriteGenerator.CreateStarburstSprite();
-        Color[] palette = new Color[] {
-            new Color(1f, 0.4f, 0.4f), new Color(1f, 0.85f, 0.2f),
-            new Color(0.5f, 0.8f, 1f), new Color(0.6f, 1f, 0.6f),
-            new Color(1f, 0.6f, 0.9f),
-        };
-        float interval = totalDuration / count;
-        for (int i = 0; i < count; i++)
-        {
-            Vector3 pos = new Vector3(Random.Range(-2.5f, 2.5f), Random.Range(1f, 3f), 0f);
-            Color c = palette[Random.Range(0, palette.Length)];
-            StartCoroutine(FireworkBurst(pos, c, burstSprite));
-            if (i < count - 1) yield return new WaitForSeconds(interval);
-        }
-    }
-
-    private IEnumerator FireworkBurst(Vector3 pos, Color color, Sprite sprite)
-    {
-        GameObject go = new GameObject("Firework");
-        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = sprite;
-        sr.color = color;
-        sr.sortingOrder = 54;
-        go.transform.position = pos;
-        go.transform.localScale = Vector3.zero;
-        _spawned.Add(go);
-
-        float dur = 0.5f;
-        float elapsed = 0f;
-        while (elapsed < dur)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / dur);
-            go.transform.localScale = Vector3.one * (1.6f * t);
-            sr.color = new Color(color.r, color.g, color.b, 1f - t);
-            yield return null;
-        }
-        _spawned.Remove(go);
-        Destroy(go);
+        if (t != null) t.localScale = end;
     }
 
     private IEnumerator CameraShake(float dur)
@@ -428,7 +696,7 @@ public class WinSequence : MonoBehaviour
         GameObject go = new GameObject("WinSequenceCanvas");
         _canvas = go.AddComponent<Canvas>();
         _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        _canvas.sortingOrder = 200; // above the board, below result dialog
+        _canvas.sortingOrder = 200;
         CanvasScaler scaler = go.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
@@ -446,7 +714,9 @@ public class WinSequence : MonoBehaviour
             if (_spawned[i] != null) Destroy(_spawned[i]);
         }
         _spawned.Clear();
-        // Recreate the canvas for the next finale run.
+        _lidHinge = null;
+        _chestBody = null;
+        _chestGlow = null;
         CreateCanvas();
     }
 
@@ -461,14 +731,15 @@ public class WinSequence : MonoBehaviour
 
     private IEnumerator ElasticIn(Transform target, float dur)
     {
+        if (target == null) yield break;
         float elapsed = 0f;
-        while (elapsed < dur)
+        while (elapsed < dur && target != null)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / dur);
             target.localScale = Vector3.one * BackOut(t);
             yield return null;
         }
-        target.localScale = Vector3.one;
+        if (target != null) target.localScale = Vector3.one;
     }
 }
