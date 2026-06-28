@@ -42,7 +42,7 @@ public static class AnimationHelper
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
-            t = 1f - (1f - t) * (1f - t); // ease out quad
+            t = PolishMotion.EaseInOutCubic(t);
             for (int i = 0; i < movers.Count; i++)
             {
                 var m = movers[i];
@@ -57,6 +57,89 @@ public static class AnimationHelper
             if (m.tr != null)
                 m.tr.position = m.to;
         }
+    }
+
+    /// <summary>Moves both swapped pieces concurrently with a tiny lift and scale accent.</summary>
+    public static IEnumerator TweenSwapPair(
+        Transform first, Vector3 firstFrom, Vector3 firstTo,
+        Transform second, Vector3 secondFrom, Vector3 secondTo,
+        float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = PolishMotion.EaseInOutCubic(t);
+            float lift = Mathf.Sin(t * Mathf.PI) * 0.055f;
+            float scale = 1f + Mathf.Sin(t * Mathf.PI) * 0.06f;
+
+            if (first != null)
+            {
+                first.position = Vector3.Lerp(firstFrom, firstTo, eased) + Vector3.up * lift;
+                first.localScale = Vector3.one * scale;
+            }
+            if (second != null)
+            {
+                second.position = Vector3.Lerp(secondFrom, secondTo, eased) - Vector3.up * lift;
+                second.localScale = Vector3.one * scale;
+            }
+            yield return null;
+        }
+
+        if (first != null) { first.position = firstTo; first.localScale = Vector3.one; }
+        if (second != null) { second.position = secondTo; second.localScale = Vector3.one; }
+    }
+
+    /// <summary>Distance-aware fall with a restrained overshoot and landing squash.</summary>
+    public static IEnumerator TweenPositionsJuicy(List<(Transform tr, Vector3 from, Vector3 to, int distance)> movers)
+    {
+        if (movers == null || movers.Count == 0) yield break;
+
+        float duration = 0f;
+        for (int i = 0; i < movers.Count; i++)
+            duration = Mathf.Max(duration, PolishMotion.FallDuration(movers[i].distance));
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            for (int i = 0; i < movers.Count; i++)
+            {
+                var m = movers[i];
+                if (m.tr == null) continue;
+                float local = Mathf.Clamp01(elapsed / PolishMotion.FallDuration(m.distance));
+                float eased = PolishMotion.EaseOutBack(local);
+                m.tr.position = Vector3.LerpUnclamped(m.from, m.to, eased);
+                float squash = 1f - Mathf.Sin(local * Mathf.PI) * 0.035f;
+                m.tr.localScale = new Vector3(1f / squash, squash, 1f);
+            }
+            yield return null;
+        }
+
+        for (int i = 0; i < movers.Count; i++)
+        {
+            var m = movers[i];
+            if (m.tr == null) continue;
+            m.tr.position = m.to;
+            m.tr.localScale = Vector3.one;
+        }
+    }
+
+    public static IEnumerator PunchScales(Transform first, Transform second, float amount, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float scale = 1f + Mathf.Sin(t * Mathf.PI) * amount;
+            if (first != null) first.localScale = Vector3.one * scale;
+            if (second != null) second.localScale = Vector3.one * scale;
+            yield return null;
+        }
+        if (first != null) first.localScale = Vector3.one;
+        if (second != null) second.localScale = Vector3.one;
     }
 
     public static IEnumerator TweenScale(Transform target, Vector3 from, Vector3 to, float duration)

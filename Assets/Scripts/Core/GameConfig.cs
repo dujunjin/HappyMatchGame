@@ -35,9 +35,9 @@ public static class GameConfig
     public static readonly Color ElementColor_Suitcase = new Color(0.9f, 0.6f, 0.1f);
 
     // Animation durations (seconds) — global, not level-specific
-    public const float SwapDuration = 0.2f;
-    public const float ClearDuration = 0.2f;
-    public const float FallDuration = 0.15f;
+    public const float SwapDuration = 0.16f;
+    public const float ClearDuration = 0.18f;
+    public const float FallDuration = 0.18f;
     public const float RefillDelay = 0.05f;
 
     // Special types

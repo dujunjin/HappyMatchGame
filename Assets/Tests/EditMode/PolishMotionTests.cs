@@ -23,6 +23,13 @@ public class PolishMotionTests
         Assert.That(PolishMotion.FallDuration(20), Is.InRange(0.18f, 0.34f));
     }
 
+    [Test]
+    public void SwapTiming_IsSnappy()
+    {
+        Assert.That(GameConfig.SwapDuration, Is.InRange(0.14f, 0.18f));
+        Assert.Less(GameConfig.SwapDuration, GameConfig.ClearDuration + 0.01f);
+    }
+
     [TestCase(ElementType.Red, true)]
     [TestCase(ElementType.Blue, true)]
     [TestCase(ElementType.Yellow, true)]

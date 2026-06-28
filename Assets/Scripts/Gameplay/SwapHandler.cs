@@ -121,10 +121,10 @@ public class SwapHandler
         var pos1 = _board.GetWorldPosition(r2, c2);
         var pos2 = _board.GetWorldPosition(r1, c1);
 
-        if (go1 != null)
-            yield return AnimationHelper.TweenPosition(go1.transform, go1.transform.position, pos1, GameConfig.SwapDuration);
-        if (go2 != null)
-            yield return AnimationHelper.TweenPosition(go2.transform, go2.transform.position, pos2, GameConfig.SwapDuration);
+        yield return AnimationHelper.TweenSwapPair(
+            go1 != null ? go1.transform : null, go1 != null ? go1.transform.position : pos1, pos1,
+            go2 != null ? go2.transform : null, go2 != null ? go2.transform.position : pos2, pos2,
+            GameConfig.SwapDuration);
 
         // Validate: data is already swapped above, so check matches on the
         // current (post-swap) board state directly. Do NOT call
@@ -142,10 +142,15 @@ public class SwapHandler
             pos1 = _board.GetWorldPosition(r2, c2);
             pos2 = _board.GetWorldPosition(r1, c1);
 
-            if (go1 != null)
-                yield return AnimationHelper.TweenPosition(go1.transform, go1.transform.position, pos1, GameConfig.SwapDuration);
-            if (go2 != null)
-                yield return AnimationHelper.TweenPosition(go2.transform, go2.transform.position, pos2, GameConfig.SwapDuration);
+            yield return AnimationHelper.PunchScales(
+                go1 != null ? go1.transform : null,
+                go2 != null ? go2.transform : null,
+                0.08f, 0.07f);
+            yield return new WaitForSeconds(0.04f);
+            yield return AnimationHelper.TweenSwapPair(
+                go1 != null ? go1.transform : null, go1 != null ? go1.transform.position : pos1, pos1,
+                go2 != null ? go2.transform : null, go2 != null ? go2.transform.position : pos2, pos2,
+                GameConfig.SwapDuration);
 
             _gameManager.Audio?.Play(AudioCatalog.Event.SwapInvalid);
             _gameManager.SetState(GameState.Idle);

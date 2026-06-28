@@ -147,14 +147,14 @@ public class CascadeManager
 
         // Collect renderers so all cells fade/shrink in parallel (not one
         // after another). GameObjects are destroyed later by DestroyCell.
-        var items = new List<(SpriteRenderer sr, Transform tr)>();
+        var items = new List<(SpriteRenderer sr, Transform tr, Color color)>();
         foreach (var (row, col) in cells)
         {
             var cell = _board.Cells[row, col];
             if (cell.gameObject == null) continue;
             var sr = cell.gameObject.GetComponent<SpriteRenderer>();
             if (sr != null)
-                items.Add((sr, cell.gameObject.transform));
+                items.Add((sr, cell.gameObject.transform, sr.color));
         }
 
         if (items.Count == 0)
@@ -170,11 +170,16 @@ public class CascadeManager
             float t = Mathf.Clamp01(elapsed / baseDuration);
             for (int i = 0; i < items.Count; i++)
             {
-                var (sr, tr) = items[i];
+                var (sr, tr, color) = items[i];
                 if (sr != null)
                 {
-                    tr.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t);
-                    sr.color = new Color(sr.color.r, sr.color.g, sr.color.b, 1f - t);
+                    float pop = t < 0.32f
+                        ? Mathf.Lerp(1f, 1.15f, PolishMotion.EaseOutQuart(t / 0.32f))
+                        : Mathf.Lerp(1.15f, 0f, PolishMotion.EaseInOutCubic((t - 0.32f) / 0.68f));
+                    float flash = Mathf.Sin(Mathf.Clamp01(t / 0.45f) * Mathf.PI);
+                    tr.localScale = Vector3.one * pop;
+                    Color flashed = Color.Lerp(color, Color.white, flash * 0.75f);
+                    sr.color = new Color(flashed.r, flashed.g, flashed.b, 1f - Mathf.Clamp01((t - 0.32f) / 0.68f));
                 }
             }
             yield return null;
@@ -183,26 +188,22 @@ public class CascadeManager
 
     private IEnumerator AnimateFalling(List<(int fromRow, int fromCol, int toRow, int toCol)> moves)
     {
-        float duration = GameConfig.FallDuration;
-
-        // Collect every move first, then tween them all in parallel over a
-        // single duration (previously each fell one-by-one, which felt slow).
-        var movers = new List<(Transform tr, Vector3 from, Vector3 to)>();
+        var movers = new List<(Transform tr, Vector3 from, Vector3 to, int distance)>();
         foreach (var (fromRow, fromCol, toRow, toCol) in moves)
         {
             var cell = _board.Cells[toRow, toCol];
             if (cell.gameObject == null) continue;
             Vector3 from = _board.GetWorldPosition(fromRow, fromCol);
             Vector3 to = _board.GetWorldPosition(toRow, toCol);
-            movers.Add((cell.gameObject.transform, from, to));
+            movers.Add((cell.gameObject.transform, from, to, Mathf.Abs(toRow - fromRow)));
         }
 
-        yield return AnimationHelper.TweenPositions(movers, duration);
+        yield return AnimationHelper.TweenPositionsJuicy(movers);
     }
 
     private IEnumerator AnimateRefill(List<(int targetRow, int targetCol, ElementType type, GameConfig.SpecialType special, GameConfig.RocketDir rocketDir)> needs)
     {
-        var movers = new List<(Transform tr, Vector3 from, Vector3 to)>();
+        var movers = new List<(Transform tr, Vector3 from, Vector3 to, int distance)>();
         // Track the next spawn row per column so new elements stack above the
         // board (rows -1, -2, -3, ...) and fall in together without overlapping.
         var colStartRow = new Dictionary<int, int>();
@@ -224,11 +225,11 @@ public class CascadeManager
             _board.Cells[targetRow, targetCol].rocketDir = rocketDir;
 
             Vector3 targetPos = _board.GetWorldPosition(targetRow, targetCol);
-            movers.Add((go.transform, startPos, targetPos));
+            movers.Add((go.transform, startPos, targetPos, Mathf.Abs(targetRow - startRow)));
         }
 
         // All new elements fall in together.
-        yield return AnimationHelper.TweenPositions(movers, GameConfig.FallDuration);
+        yield return AnimationHelper.TweenPositionsJuicy(movers);
     }
 
     /// <summary>Element type -> procedural clear-burst color (mirrors GameConfig).</summary>
