@@ -255,13 +255,14 @@ public class GameManager : MonoBehaviour
 
         sr.sprite = GlassPanelTexture.CreateRectGlassPanel(
             texW, texH, texCornerRadius,
-            new Color(1f, 1f, 1f, 0.18f),   // more transparent glass fill
-            0.30f,   // border highlight
-            0.15f,   // top inner glow
-            0.030f   // stronger noise for fake blur
+            new Color(0.055f, 0.19f, 0.42f, 0.58f),
+            0.42f,
+            0.22f,
+            0.014f
         );
         sr.sortingOrder = -1;
         sr.color = Color.white;
+        go.transform.SetParent(boardController.transform, false);
         go.transform.position = center;
         // Sliced draw mode + explicit size = proper 9-slice rendering
         sr.drawMode = SpriteDrawMode.Sliced;

@@ -74,10 +74,10 @@ public class BoardController : MonoBehaviour
         // border-radius 8px. Boosted alpha for visibility in Unity.
         _cellBgSprite = GlassPanelTexture.CreateGlassPanel(
             96, 18f,
-            new Color(1f, 1f, 1f, 0.10f),   // more transparent glass fill
-            0.20f,   // border highlight
-            0.08f,   // subtle top glow
-            0.025f   // stronger noise for fake blur
+            new Color(0.12f, 0.34f, 0.64f, 0.27f),
+            0.34f,
+            0.16f,
+            0.014f
         );
 
         _boardRoot = new GameObject("BoardRoot");
@@ -161,6 +161,9 @@ public class BoardController : MonoBehaviour
         Sprite sprite = gameManager.GetSpriteForType(type);
         sr.sprite = sprite;
         sr.sortingOrder = 1;
+        PieceVisual visual = go.AddComponent<PieceVisual>();
+        visual.Configure();
+        visual.SetSprite(sprite);
 
         // Add collider for input
         CircleCollider2D collider2D = go.AddComponent<CircleCollider2D>();
@@ -185,10 +188,13 @@ public class BoardController : MonoBehaviour
 
         if (_cells[row, col].gameObject != null)
         {
-            SpriteRenderer sr = _cells[row, col].gameObject.GetComponent<SpriteRenderer>();
-            if (sr != null)
+            Sprite sprite = gameManager.GetSpriteForType(type, special, rocketDir);
+            PieceVisual visual = _cells[row, col].gameObject.GetComponent<PieceVisual>();
+            if (visual != null) visual.SetSprite(sprite);
+            else
             {
-                sr.sprite = gameManager.GetSpriteForType(type, special, rocketDir);
+                SpriteRenderer sr = _cells[row, col].gameObject.GetComponent<SpriteRenderer>();
+                if (sr != null) sr.sprite = sprite;
             }
         }
 
@@ -247,11 +253,15 @@ public class BoardController : MonoBehaviour
     public GameObject CreateFallingElement(ElementType type, Vector3 startPos, GameConfig.SpecialType special = GameConfig.SpecialType.None, GameConfig.RocketDir rocketDir = GameConfig.RocketDir.Horizontal)
     {
         GameObject go = new GameObject("FallingElement");
+        if (_boardRoot != null) go.transform.SetParent(_boardRoot.transform);
         go.transform.position = startPos;
 
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = gameManager.GetSpriteForType(type, special, rocketDir);
         sr.sortingOrder = 1;
+        PieceVisual visual = go.AddComponent<PieceVisual>();
+        visual.Configure();
+        visual.SetSprite(sr.sprite);
 
         CircleCollider2D collider2D = go.AddComponent<CircleCollider2D>();
         collider2D.radius = cellSize * 0.45f;

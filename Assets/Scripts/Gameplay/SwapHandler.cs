@@ -96,10 +96,12 @@ public class SwapHandler
     private void HighlightCell(int row, int col, bool on)
     {
         if (_board.Cells[row, col].gameObject == null) return;
-        var sr = _board.Cells[row, col].gameObject.GetComponent<SpriteRenderer>();
-        if (sr != null)
+        var visual = _board.Cells[row, col].gameObject.GetComponent<PieceVisual>();
+        if (visual != null) visual.SetSelected(on);
+        else
         {
-            sr.color = on ? new Color(1f, 1f, 1f, 0.7f) : Color.white;
+            var sr = _board.Cells[row, col].gameObject.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.color = on ? new Color(1f, 1f, 1f, 0.86f) : Color.white;
         }
     }
 
