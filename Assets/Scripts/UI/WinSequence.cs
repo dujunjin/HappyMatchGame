@@ -44,6 +44,7 @@ public class WinSequence : MonoBehaviour
         CreateCanvas();
         if (_gm != null && _gm.gameUI != null) _gm.gameUI.BounceTarget();
         yield return new WaitForSeconds(0.16f);
+        if (_gm != null && _gm.gameUI != null) _gm.gameUI.SetHudVisible(false);
         CreateVignette();
         yield return BoardExit(0.45f);
         yield return Finale();
@@ -113,22 +114,22 @@ public class WinSequence : MonoBehaviour
         GameObject go = new GameObject("GreatText");
         go.transform.SetParent(_canvas.transform, false);
         RectTransform rt = go.AddComponent<RectTransform>();
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.62f);
+        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.72f);
         rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(900f, 220f);
+        rt.sizeDelta = new Vector2(340f, 96f);
         rt.anchoredPosition = Vector2.zero;
         rt.localScale = Vector3.zero;
 
         TextMeshProUGUI tmp = go.AddComponent<TextMeshProUGUI>();
         tmp.text = "Great!";
-        tmp.fontSize = 96;
+        tmp.fontSize = 52;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(1f, 0.85f, 0.2f);
         tmp.fontStyle = FontStyles.Bold;
 
         UnityEngine.UI.Outline outline = go.AddComponent<UnityEngine.UI.Outline>();
         outline.effectColor = new Color(0.26f, 0.08f, 0.02f, 0.82f);
-        outline.effectDistance = new Vector2(3f, -3f);
+        outline.effectDistance = new Vector2(2f, -2f);
 
         _spawned.Add(go);
         StartCoroutine(ElasticIn(go.transform, 0.24f));
@@ -177,12 +178,12 @@ public class WinSequence : MonoBehaviour
     private IEnumerator OpenChestBurst()
     {
         GameObject chest = CreateChest();
-        chest.transform.position = new Vector3(0f, -0.2f, 0f);
+        chest.transform.position = new Vector3(0f, -0.35f, 0f);
         chest.transform.localScale = Vector3.zero;
         _spawned.Add(chest);
 
         // Pop the chest in.
-        yield return ScaleTo(chest.transform, 2.5f, 0.25f);
+        yield return ScaleTo(chest.transform, 2.1f, 0.25f);
 
         // Mouth = lid seam (where effects emerge). Chest root is at y=-0.2,
         // hinge at local y=0 -> world y=-0.2; "mouth" just above the seam.
@@ -697,8 +698,8 @@ public class WinSequence : MonoBehaviour
 
     private void ShowButtons()
     {
-        CreateButton("Retry", new Vector2(0f, -160f), () => ReloadScene());
-        CreateButton("Replay", new Vector2(0f, -250f), () => Replay());
+        CreateButton("Retry", new Vector2(0f, -250f), () => ReloadScene());
+        CreateButton("Replay", new Vector2(0f, -305f), () => Replay());
     }
 
     private void CreateButton(string label, Vector2 anchorPos, System.Action onClick)
@@ -709,10 +710,14 @@ public class WinSequence : MonoBehaviour
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
         rt.pivot = new Vector2(0.5f, 0.5f);
         rt.anchoredPosition = anchorPos;
-        rt.sizeDelta = new Vector2(320f, 72f);
+        rt.sizeDelta = new Vector2(190f, 44f);
 
         Image img = btn.AddComponent<Image>();
-        img.color = new Color(0.2f, 0.6f, 1f);
+        img.sprite = GlassPanelTexture.CreateRoundedRect(240, 72, 30f, Color.white);
+        img.type = Image.Type.Sliced;
+        img.color = label == "Retry"
+            ? new Color(0.18f, 0.56f, 1f, 0.96f)
+            : new Color(0.12f, 0.24f, 0.48f, 0.92f);
 
         Button button = btn.AddComponent<Button>();
         var colors = button.colors;
@@ -727,7 +732,7 @@ public class WinSequence : MonoBehaviour
         txtRt.sizeDelta = Vector2.zero;
         TextMeshProUGUI tmp = txtGo.AddComponent<TextMeshProUGUI>();
         tmp.text = label;
-        tmp.fontSize = 34;
+        tmp.fontSize = 18;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
 
@@ -752,7 +757,7 @@ public class WinSequence : MonoBehaviour
         _canvas.sortingOrder = 200;
         CanvasScaler scaler = go.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.referenceResolution = new Vector2(390f, 844f);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 0.5f;
         go.AddComponent<GraphicRaycaster>();

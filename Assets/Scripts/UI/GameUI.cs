@@ -65,4 +65,9 @@ public class GameUI : MonoBehaviour
     {
         _topBar?.Bounce();
     }
+
+    public void SetHudVisible(bool visible)
+    {
+        if (_topBar != null) _topBar.gameObject.SetActive(visible);
+    }
 }

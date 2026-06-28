@@ -160,6 +160,13 @@ public class GameManager : MonoBehaviour
         targetPresentation.Init(this, Flow);
 
         SetState(GameState.Idle);
+
+        string[] commandLine = System.Environment.GetCommandLineArgs();
+        if (AcceptanceDirector.ShouldRun(commandLine))
+        {
+            AcceptanceDirector director = gameObject.AddComponent<AcceptanceDirector>();
+            director.Init(this);
+        }
     }
 
     public Sprite GetSpriteForType(ElementType type, GameConfig.SpecialType special = GameConfig.SpecialType.None, GameConfig.RocketDir rocketDir = GameConfig.RocketDir.Horizontal)
