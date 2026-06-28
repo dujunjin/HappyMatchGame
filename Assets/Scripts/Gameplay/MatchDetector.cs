@@ -49,8 +49,8 @@ public class MatchDetector
                 ElementType current = !atEdge ? _board.Cells[row, col].elementType : ElementType.Empty;
                 bool currentSpecial = !atEdge && _board.Cells[row, col].HasSpecial;
 
-                // Only non-special, non-empty cells can be part of a color run.
-                bool isRunCell = !atEdge && !currentSpecial && current != ElementType.Empty;
+                // Suitcases are targets/obstacles, not a fifth match color.
+                bool isRunCell = !atEdge && !currentSpecial && PolishMotion.IsColorMatchable(current);
 
                 if (!isRunCell || current != runType)
                 {
@@ -85,7 +85,7 @@ public class MatchDetector
                 ElementType current = !atEdge ? _board.Cells[row, col].elementType : ElementType.Empty;
                 bool currentSpecial = !atEdge && _board.Cells[row, col].HasSpecial;
 
-                bool isRunCell = !atEdge && !currentSpecial && current != ElementType.Empty;
+                bool isRunCell = !atEdge && !currentSpecial && PolishMotion.IsColorMatchable(current);
 
                 if (!isRunCell || current != runType)
                 {
