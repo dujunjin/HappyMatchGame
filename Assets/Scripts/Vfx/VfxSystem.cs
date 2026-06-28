@@ -120,6 +120,16 @@ public class VfxSystem : MonoBehaviour
         }
     }
 
+    public void SpawnRocketMuzzle(Vector3 pos, Color color)
+    {
+        GameObject burst = Acquire(_starburst, 22);
+        burst.transform.position = pos;
+        burst.transform.localScale = Vector3.one * 0.18f;
+        SpriteRenderer sr = burst.GetComponent<SpriteRenderer>();
+        sr.color = new Color(color.r, color.g, color.b, 0.95f);
+        StartCoroutine(RingExpand(burst, sr, 0.82f, 0.20f));
+    }
+
     public void SpawnBombBlast(Vector3 pos)
     {
         // Shock ring.
@@ -143,7 +153,7 @@ public class VfxSystem : MonoBehaviour
             StartCoroutine(ShardFly(go, sr, pos, dir * Random.Range(2.5f, 4.5f), 0.45f));
         }
 
-        StartCoroutine(CameraShake(0.18f, 0.12f));
+        Impulse(0.18f, 0.12f);
     }
 
     public void SpawnPropellerTrail(Vector3 pos)
@@ -164,6 +174,33 @@ public class VfxSystem : MonoBehaviour
         var sr = burst.GetComponent<SpriteRenderer>();
         sr.color = new Color(1f, 0.95f, 0.7f, 1f);
         StartCoroutine(RingExpand(burst, sr, 1.2f, 0.35f));
+    }
+
+    public void SpawnTargetArrival(Vector3 pos)
+    {
+        GameObject ring = Acquire(_ring, 30);
+        ring.transform.position = pos;
+        ring.transform.localScale = Vector3.one * 0.16f;
+        SpriteRenderer ringRenderer = ring.GetComponent<SpriteRenderer>();
+        ringRenderer.color = new Color(1f, 0.86f, 0.34f, 0.82f);
+        StartCoroutine(RingExpand(ring, ringRenderer, 0.95f, 0.28f));
+
+        for (int i = 0; i < 6; i++)
+        {
+            GameObject sparkle = Acquire(_star, 31);
+            sparkle.transform.position = pos;
+            sparkle.transform.localScale = Vector3.one * 0.055f;
+            SpriteRenderer sr = sparkle.GetComponent<SpriteRenderer>();
+            sr.color = new Color(1f, 0.94f, 0.62f, 0.95f);
+            float angle = i * Mathf.PI * 2f / 6f;
+            Vector2 direction = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            StartCoroutine(ShardFly(sparkle, sr, pos, direction * 1.25f, 0.30f));
+        }
+    }
+
+    public void Impulse(float duration, float amplitude)
+    {
+        StartCoroutine(CameraShake(duration, amplitude));
     }
 
     // --- particle coroutines ---

@@ -162,7 +162,7 @@ public static class AnimationHelper
     {
         if (obj == null) yield break;
         Transform tr = obj.transform;
-        yield return TweenScale(tr, Vector3.one, Vector3.zero, duration);
+        yield return TweenScale(tr, tr.localScale, Vector3.zero, duration);
         if (obj != null) Object.Destroy(obj);
     }
 

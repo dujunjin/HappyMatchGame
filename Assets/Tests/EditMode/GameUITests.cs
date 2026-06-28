@@ -4,6 +4,25 @@ using UnityEngine;
 public class GameUITests
 {
     [Test]
+    public void TopBarInit_CreatesTargetPillAndStepsBadge()
+    {
+        GameObject root = new GameObject("TopBarView");
+        TopBarView topBar = root.AddComponent<TopBarView>();
+
+        try
+        {
+            topBar.Init(null);
+            Assert.IsNotNull(root.transform.Find("TopBarCanvas/TopBarPanel/TargetPill"));
+            Assert.IsNotNull(root.transform.Find("TopBarCanvas/TopBarPanel/StepsBadge"));
+            Assert.IsNotNull(root.transform.Find("TopBarCanvas/TopBarPanel/TargetPill/TargetCount"));
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
+    }
+
+    [Test]
     public void Init_ReusesConfiguredTopBarChild()
     {
         GameObject root = new GameObject("GameUI");

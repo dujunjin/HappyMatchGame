@@ -42,6 +42,9 @@ public class WinSequence : MonoBehaviour
     private IEnumerator Sequence()
     {
         CreateCanvas();
+        if (_gm != null && _gm.gameUI != null) _gm.gameUI.BounceTarget();
+        yield return new WaitForSeconds(0.16f);
+        CreateVignette();
         yield return BoardExit(0.45f);
         yield return Finale();
     }
@@ -50,6 +53,7 @@ public class WinSequence : MonoBehaviour
     public void Replay()
     {
         CleanupSpawned();
+        CreateVignette();
         StartCoroutine(Finale());
     }
 
@@ -122,8 +126,28 @@ public class WinSequence : MonoBehaviour
         tmp.color = new Color(1f, 0.85f, 0.2f);
         tmp.fontStyle = FontStyles.Bold;
 
+        UnityEngine.UI.Outline outline = go.AddComponent<UnityEngine.UI.Outline>();
+        outline.effectColor = new Color(0.26f, 0.08f, 0.02f, 0.82f);
+        outline.effectDistance = new Vector2(3f, -3f);
+
         _spawned.Add(go);
         StartCoroutine(ElasticIn(go.transform, 0.24f));
+    }
+
+    private void CreateVignette()
+    {
+        if (_canvas == null) return;
+        GameObject go = new GameObject("VictoryVignette");
+        go.transform.SetParent(_canvas.transform, false);
+        RectTransform rt = go.AddComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+        UnityEngine.UI.Image image = go.AddComponent<UnityEngine.UI.Image>();
+        image.color = new Color(0.015f, 0.025f, 0.09f, 0.22f);
+        image.raycastTarget = false;
+        _spawned.Add(go);
     }
 
     private void BrightenBackground()

@@ -54,6 +54,7 @@ public class TargetPresentation
         // Phase E: suitcase break SFX.
         _gameManager.Audio?.Play(AudioCatalog.Event.SuitcaseHit);
 
+        int launchIndex = 0;
         foreach (var (row, col) in cells)
         {
             if (!Helper.IsInBounds(row, col, _board.Rows, _board.Cols)) continue;
@@ -78,7 +79,8 @@ public class TargetPresentation
             }
 
             flyingCount++;
-            _gameManager.StartCoroutine(HitAndFly(go, go.transform.position));
+            _gameManager.StartCoroutine(HitAndFly(go, go.transform.position, launchIndex * 0.035f));
+            launchIndex++;
         }
     }
 
@@ -87,10 +89,13 @@ public class TargetPresentation
     /// On arrival: destroy flyer, bounce target, tick the display counter
     /// down, and on the last flyer run the settle flow.
     /// </summary>
-    private IEnumerator HitAndFly(GameObject go, Vector3 startPos)
+    private IEnumerator HitAndFly(GameObject go, Vector3 startPos, float launchDelay)
     {
         SpriteRenderer sr = go.GetComponent<SpriteRenderer>();
         if (sr != null) sr.sortingOrder = 5; // render above the board
+
+        // A slight stagger keeps multi-target collections readable and musical.
+        if (launchDelay > 0f) yield return new WaitForSeconds(launchDelay);
 
         // --- Hit: flash white + compress, ~0.15s ---
         const float hitDur = 0.15f;
@@ -125,14 +130,20 @@ public class TargetPresentation
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / flyDur);
+            float eased = PolishMotion.EaseInOutCubic(t);
             float u = 1f - t;
-            go.transform.position = u * u * startPos + 2f * u * t * control + t * t * target;
-            // Gentle spin so the flyer reads as "flying".
-            go.transform.rotation = Quaternion.Euler(0f, 0f, -t * 180f);
+            Vector3 position = u * u * startPos + 2f * u * t * control + t * t * target;
+            // Blend the bezier's time with an eased homing finish.
+            go.transform.position = Vector3.Lerp(position, target, Mathf.Clamp01((eased - 0.82f) / 0.18f) * 0.16f);
+            go.transform.rotation = Quaternion.Euler(0f, 0f, -Mathf.Sin(t * Mathf.PI) * 135f);
+            float depthScale = Mathf.Lerp(1f, 0.76f, Mathf.Sin(t * Mathf.PI));
+            float arrivalPop = t > 0.82f ? Mathf.Lerp(1f, 1.18f, (t - 0.82f) / 0.18f) : 1f;
+            go.transform.localScale = baseScale * depthScale * arrivalPop;
             yield return null;
         }
 
         // --- Arrive ---
+        if (_gameManager.Vfx != null) _gameManager.Vfx.SpawnTargetArrival(target);
         Object.Destroy(go);
         if (_gameManager.gameUI != null) _gameManager.gameUI.BounceTarget();
 

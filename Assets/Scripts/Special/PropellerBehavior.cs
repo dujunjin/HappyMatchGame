@@ -71,9 +71,20 @@ public class PropellerBehavior : MonoBehaviour
         _board.Cells[row, col].specialType = GameConfig.SpecialType.None;
         _board.Cells[row, col].gameObject = null;
 
-        // Takeoff: brief scale-up + lift.
+        // Takeoff: brief scale-up, tilt and lift before the homing arc.
         Vector3 start = transform.position;
-        yield return AnimationHelper.TweenScale(transform, Vector3.one, Vector3.one * 1.25f, 0.16f);
+        float takeoff = 0f;
+        const float takeoffDuration = 0.16f;
+        while (takeoff < takeoffDuration)
+        {
+            takeoff += Time.deltaTime;
+            float t = PolishMotion.EaseOutBack(takeoff / takeoffDuration);
+            transform.localScale = Vector3.LerpUnclamped(Vector3.one, Vector3.one * 1.25f, t);
+            transform.position = start + Vector3.up * (0.16f * Mathf.Clamp01(t));
+            transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, -18f, Mathf.Clamp01(t)));
+            yield return null;
+        }
+        start = transform.position;
 
         // Choose target.
         var suitcases = _board.GetSuitcaseCells();

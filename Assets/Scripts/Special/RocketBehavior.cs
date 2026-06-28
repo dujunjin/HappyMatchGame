@@ -55,15 +55,20 @@ public class RocketBehavior : MonoBehaviour
             yield break;
         }
 
-        // Flash animation
+        // Snappy anticipation: compress, flare, then release into the beam.
         float flash = 0f;
-        while (flash < 0.3f)
+        const float chargeDuration = 0.12f;
+        while (flash < chargeDuration)
         {
             flash += Time.deltaTime;
-            float t = flash / 0.3f;
-            transform.localScale = Vector3.one * (1f + Mathf.Sin(t * Mathf.PI * 4f) * 0.3f);
+            float t = Mathf.Clamp01(flash / chargeDuration);
+            float scale = t < 0.55f
+                ? Mathf.Lerp(1f, 0.78f, PolishMotion.EaseInOutCubic(t / 0.55f))
+                : Mathf.Lerp(0.78f, 1.28f, PolishMotion.EaseOutBack((t - 0.55f) / 0.45f));
+            transform.localScale = Vector3.one * scale;
             yield return null;
         }
+        transform.localScale = Vector3.one * 1.12f;
 
         // Determine which cells to clear (entire row/col, including the rocket's
         // own cell — the rocket is consumed when activated).
@@ -97,6 +102,8 @@ public class RocketBehavior : MonoBehaviour
                 _ => Color.white,
             };
             _gameManager.Vfx.SpawnRocketTrail(from, to, rc);
+            _gameManager.Vfx.SpawnRocketMuzzle(_board.GetWorldPosition(row, col), rc);
+            _gameManager.Vfx.Impulse(0.10f, 0.055f);
         }
 
         // Check suitcases adjacent to cleared cells
@@ -120,7 +127,7 @@ public class RocketBehavior : MonoBehaviour
         }
 
         // Shrink out.
-        yield return AnimationHelper.TweenScale(transform, Vector3.one, Vector3.zero, 0.15f);
+        yield return AnimationHelper.TweenScale(transform, transform.localScale, Vector3.zero, 0.15f);
 
         // Start the cascade via the presenter so the dead-board check (and
         // future presentation hooks) runs after the rocket's line clears.

@@ -51,12 +51,16 @@ public class BombBehavior : MonoBehaviour
             yield break;
         }
 
-        // Pulse animation
+        // Compress into a charged core, then overshoot into the blast.
         float pulse = 0f;
-        while (pulse < 0.25f)
+        const float chargeDuration = 0.18f;
+        while (pulse < chargeDuration)
         {
             pulse += Time.deltaTime;
-            float s = 1f + Mathf.Sin(pulse / 0.25f * Mathf.PI) * 0.4f;
+            float t = Mathf.Clamp01(pulse / chargeDuration);
+            float s = t < 0.62f
+                ? Mathf.Lerp(1f, 0.78f, PolishMotion.EaseInOutCubic(t / 0.62f))
+                : Mathf.Lerp(0.78f, 1.42f, PolishMotion.EaseOutBack((t - 0.62f) / 0.38f));
             transform.localScale = Vector3.one * s;
             yield return null;
         }
@@ -98,7 +102,7 @@ public class BombBehavior : MonoBehaviour
         }
 
         // Shrink out.
-        yield return AnimationHelper.TweenScale(transform, Vector3.one, Vector3.zero, 0.15f);
+        yield return AnimationHelper.TweenScale(transform, transform.localScale, Vector3.zero, 0.15f);
 
         // Start the cascade via the presenter so the dead-board check (and
         // future presentation hooks) runs after the bomb's blast clears.
