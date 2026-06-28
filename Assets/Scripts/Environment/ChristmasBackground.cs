@@ -19,7 +19,10 @@ public class ChristmasBackground : MonoBehaviour
     public Sprite backgroundSprite;
 
     private readonly List<SpriteRenderer> _treeLights = new List<SpriteRenderer>();
+    private readonly List<SpriteRenderer> _ambientGlows = new List<SpriteRenderer>();
     private Transform _treeStar;
+    private Transform _backgroundTransform;
+    private Vector3 _backgroundBasePosition;
     private float _sparkTimer;
     private Sprite _sparkSprite;
 
@@ -45,8 +48,12 @@ public class ChristmasBackground : MonoBehaviour
             float sh = backgroundSprite.textureRect.height / ppu;
             float scaleX = viewW / sw;
             float scaleY = viewH / sh;
-            float scale = Mathf.Max(scaleX, scaleY);
+            float scale = Mathf.Max(scaleX, scaleY) * 1.035f;
             bgGO.transform.localScale = new Vector3(scale, scale, 1f);
+
+            _backgroundTransform = bgGO.transform;
+            _backgroundBasePosition = bgGO.transform.position;
+            CreateAmbientOverlays(viewW, viewH);
 
             return; // Skip procedural background.
         }
@@ -127,6 +134,21 @@ public class ChristmasBackground : MonoBehaviour
             Vector3.one * 1.0f, -5, Color.white);
     }
 
+    private void CreateAmbientOverlays(float viewW, float viewH)
+    {
+        Sprite coldGlow = ChristmasArt.CreateGlowSprite(new Color(0.48f, 0.74f, 1f, 1f));
+        GameObject moon = MakeSpriteGO("MoonAtmosphere", coldGlow,
+            new Vector3(viewW * 0.27f, viewH * 0.32f, 0f), Vector3.one * 4.6f, -11,
+            new Color(0.55f, 0.78f, 1f, 0.16f));
+        _ambientGlows.Add(moon.GetComponent<SpriteRenderer>());
+
+        Sprite warmGlow = ChristmasArt.CreateGlowSprite(new Color(1f, 0.58f, 0.20f, 1f));
+        GameObject cabin = MakeSpriteGO("CabinAtmosphere", warmGlow,
+            new Vector3(-viewW * 0.36f, -viewH * 0.12f, 0f), Vector3.one * 3.2f, -11,
+            new Color(1f, 0.60f, 0.25f, 0.12f));
+        _ambientGlows.Add(cabin.GetComponent<SpriteRenderer>());
+    }
+
     private GameObject MakeSpriteGO(string name, Sprite sprite, Vector3 pos, Vector3 scale, int sortingOrder, Color color)
     {
         GameObject go = new GameObject(name);
@@ -150,6 +172,23 @@ public class ChristmasBackground : MonoBehaviour
 
     private void Update()
     {
+        if (_backgroundTransform != null)
+        {
+            _backgroundTransform.position = _backgroundBasePosition + new Vector3(
+                Mathf.Sin(Time.time * 0.11f) * 0.025f,
+                Mathf.Sin(Time.time * 0.08f + 1.3f) * 0.018f,
+                0f);
+        }
+
+        for (int i = 0; i < _ambientGlows.Count; i++)
+        {
+            SpriteRenderer glow = _ambientGlows[i];
+            if (glow == null) continue;
+            Color c = glow.color;
+            float pulse = 0.82f + (Mathf.Sin(Time.time * 0.75f + i * 1.8f) * 0.5f + 0.5f) * 0.18f;
+            glow.color = new Color(c.r, c.g, c.b, (i == 0 ? 0.16f : 0.12f) * pulse);
+        }
+
         // Blink tree lights on a staggered, firefly-like rhythm.
         float t = Time.time;
         for (int i = 0; i < _treeLights.Count; i++)

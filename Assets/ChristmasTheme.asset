@@ -18,7 +18,7 @@ MonoBehaviour:
   colorGreen: {r: 0.2, g: 0.8, b: 0.3, a: 1}
   colorSuitcase: {r: 0.9, g: 0.6, b: 0.1, a: 1}
   boardCellColor: {r: 1, g: 1, b: 1, a: 0.08}
-  backgroundColor: {r: 0.102, g: 0.102, b: 0.18, a: 1}
+  backgroundColor: {r: 0.025, g: 0.075, b: 0.16, a: 1}
   spriteRed: {fileID: 21300000, guid: 5440b9abdcfee4a259ac171f24f71953, type: 3}
   spriteBlue: {fileID: 21300000, guid: ecddacfc8932d4d6681a3dc7e383a2ba, type: 3}
   spriteYellow: {fileID: 21300000, guid: f217eb283098448119aad11a815bd897, type: 3}

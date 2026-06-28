@@ -338,7 +338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 161b8306f3e84e0aba62739457d3353f, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  backgroundSprite: {fileID: 21300000, guid: 3984c7b8590f4fd89755c84d33d7c0ea, type: 3}
+  backgroundSprite: {fileID: 21300000, guid: d8cad114491cc4549846a77b1a83a15c, type: 3}
 --- !u!4 &1190673985
 Transform:
   m_ObjectHideFlags: 0

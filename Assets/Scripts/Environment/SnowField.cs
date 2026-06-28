@@ -17,13 +17,14 @@ public class SnowField : MonoBehaviour
         public float driftPhase;
         public float driftAmp;
         public float driftSpeed;
+        public float spin;
     }
 
     private readonly List<Flake> _flakes = new List<Flake>();
     private Camera _cam;
     private float _xRange, _yTop, _yBottom;
 
-    public void Init(int backCount = 26, int frontCount = 14, int rainCount = 6)
+    public void Init(int backCount = 34, int frontCount = 18, int rainCount = 7)
     {
         _cam = Camera.main;
         if (_cam == null) return;
@@ -40,7 +41,7 @@ public class SnowField : MonoBehaviour
         // Back layer: far, small + dense. Front layer: near, large + soft.
         // Both behind the board (sortingOrder < 1) so snow never obscures pieces.
         SpawnLayer(snow, backCount, slow: true, sortingOrder: -5);
-        SpawnLayer(snow, frontCount, slow: false, sortingOrder: 0);
+        SpawnLayer(snow, frontCount, slow: false, sortingOrder: 3);
         SpawnRain(rain, rainCount);
     }
 
@@ -66,6 +67,7 @@ public class SnowField : MonoBehaviour
                 driftPhase = Random.Range(0f, 6.28f),
                 driftAmp = slow ? Random.Range(0.08f, 0.2f) : Random.Range(0.25f, 0.45f),
                 driftSpeed = Random.Range(0.8f, 1.6f),
+                spin = Random.Range(-28f, 28f),
             };
             _flakes.Add(f);
         }
@@ -78,10 +80,10 @@ public class SnowField : MonoBehaviour
             GameObject go = new GameObject("Rain");
             SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
             sr.sprite = sprite;
-            sr.sortingOrder = 0; // behind the board cells (1)
-            sr.color = new Color(0.7f, 0.8f, 0.95f, Random.Range(0.25f, 0.45f));
-            go.transform.localScale = new Vector3(0.015f, 0.35f, 1f); // thin streak
-            go.transform.rotation = Quaternion.Euler(0f, 0f, 8f); // slight diagonal
+            sr.sortingOrder = 2;
+            sr.color = new Color(0.72f, 0.84f, 1f, Random.Range(0.14f, 0.28f));
+            go.transform.localScale = new Vector3(0.012f, Random.Range(0.22f, 0.38f), 1f);
+            go.transform.rotation = Quaternion.Euler(0f, 0f, -7f);
             go.transform.position = new Vector3(Random.Range(-_xRange, _xRange), Random.Range(_yBottom, _yTop), 0f);
 
             _flakes.Add(new Flake
@@ -91,6 +93,7 @@ public class SnowField : MonoBehaviour
                 driftPhase = 0f,
                 driftAmp = 0f,
                 driftSpeed = 0f,
+                spin = 0f,
             });
         }
     }
@@ -110,6 +113,8 @@ public class SnowField : MonoBehaviour
                 p.x += Mathf.Sin(f.driftPhase) * f.driftAmp * Time.deltaTime;
             }
             f.tr.position = p;
+            if (Mathf.Abs(f.spin) > 0.01f)
+                f.tr.Rotate(0f, 0f, f.spin * Time.deltaTime);
 
             if (p.y < _yBottom)
             {
