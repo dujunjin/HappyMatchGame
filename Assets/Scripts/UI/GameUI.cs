@@ -13,10 +13,15 @@ public class GameUI : MonoBehaviour
     {
         _gameManager = gameManager;
 
-        // Create top bar
-        GameObject topBarGO = new GameObject("TopBarView");
-        topBarGO.transform.SetParent(transform);
-        _topBar = topBarGO.AddComponent<TopBarView>();
+        // Reuse a scene-configured top bar when present so Inspector-assigned
+        // icon sprites survive play mode. Fall back to the procedural setup.
+        _topBar = GetComponentInChildren<TopBarView>(true);
+        if (_topBar == null)
+        {
+            GameObject topBarGO = new GameObject("TopBarView");
+            topBarGO.transform.SetParent(transform);
+            _topBar = topBarGO.AddComponent<TopBarView>();
+        }
         _topBar.Init(gameManager);
 
         // Create result dialog (hidden initially)

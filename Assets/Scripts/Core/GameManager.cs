@@ -217,9 +217,13 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// A dark semi-transparent quad sized to the board, at sortingOrder 0
-    /// (behind the cells at 1, in front of the Christmas scene at &lt;0). Mutes
-    /// the busy background exactly where the pieces are so they pop.
+    /// A frosted-glass panel sized to the board, at sortingOrder -1
+    /// (behind the cells at 1, in front of the Christmas scene at &lt;0).
+    /// Uses CreateRectGlassPanel to generate the texture at the board's
+    /// exact aspect ratio — this prevents rounded corners from being
+    /// stretched into ovals by non-uniform scaling.
+    /// Matches HTML: background rgba(255,255,255,0.12), border rgba(255,255,255,0.18),
+    /// border-radius 20px, padding 8px.
     /// </summary>
     private void CreateBoardBackdrop()
     {
@@ -237,14 +241,32 @@ public class GameManager : MonoBehaviour
 
         GameObject go = new GameObject("BoardBackdrop");
         SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = SpriteGenerator.CreateSquareSprite(Color.white);
-        sr.sortingOrder = -1; // behind front snow (0) + board cells (1), in front of scene (<=-5)
-        // Deep night blue, mostly opaque.
-        sr.color = new Color(0.04f, 0.06f, 0.14f, 0.78f);
-        go.transform.position = center;
+
+        // Generate the glass texture at the BOARD'S EXACT ASPECT RATIO.
+        // This is the key fix: a square texture stretched non-uniformly
+        // turns round corners into ovals. A rectangular texture at the
+        // right proportions keeps corners perfectly round.
         const float ppu = 100f;
-        float sw = 16f / ppu; // CreateSquareSprite default size 16 -> 0.16 world
-        go.transform.localScale = new Vector3(w / sw, h / sw, 1f);
+        int texW = Mathf.Max(128, Mathf.RoundToInt(w * ppu));
+        int texH = Mathf.Max(128, Mathf.RoundToInt(h * ppu));
+        // HTML border-radius: 20px on ~340px board → ~6% ratio.
+        // Scale to texture: texH * 0.06, minimum 36px for visible rounding.
+        float texCornerRadius = Mathf.Max(36f, texH * 0.06f);
+
+        sr.sprite = GlassPanelTexture.CreateRectGlassPanel(
+            texW, texH, texCornerRadius,
+            new Color(1f, 1f, 1f, 0.18f),   // more transparent glass fill
+            0.30f,   // border highlight
+            0.15f,   // top inner glow
+            0.030f   // stronger noise for fake blur
+        );
+        sr.sortingOrder = -1;
+        sr.color = Color.white;
+        go.transform.position = center;
+        // Sliced draw mode + explicit size = proper 9-slice rendering
+        sr.drawMode = SpriteDrawMode.Sliced;
+        sr.size = new Vector2(w, h);
+        go.transform.localScale = Vector3.one;
     }
 
     private BoardController FindOrCreateBoardController()    {

@@ -15,6 +15,9 @@ using System.Collections.Generic;
 /// </summary>
 public class ChristmasBackground : MonoBehaviour
 {
+    [Header("Optional PNG Background (leave null for procedural)")]
+    public Sprite backgroundSprite;
+
     private readonly List<SpriteRenderer> _treeLights = new List<SpriteRenderer>();
     private Transform _treeStar;
     private float _sparkTimer;
@@ -26,6 +29,27 @@ public class ChristmasBackground : MonoBehaviour
         if (cam == null) return;
         float viewH = cam.orthographicSize * 2f;
         float viewW = viewH * cam.aspect;
+
+        // Use PNG background if assigned in Inspector.
+        if (backgroundSprite != null)
+        {
+            GameObject bgGO = new GameObject("Background");
+            SpriteRenderer sr = bgGO.AddComponent<SpriteRenderer>();
+            sr.sprite = backgroundSprite;
+            sr.sortingOrder = -12;
+            bgGO.transform.SetParent(transform, false);
+            bgGO.transform.position = new Vector3(0, 0, 0);
+
+            float ppu = 100f;
+            float sw = backgroundSprite.textureRect.width / ppu;
+            float sh = backgroundSprite.textureRect.height / ppu;
+            float scaleX = viewW / sw;
+            float scaleY = viewH / sh;
+            float scale = Mathf.Max(scaleX, scaleY);
+            bgGO.transform.localScale = new Vector3(scale, scale, 1f);
+
+            return; // Skip procedural background.
+        }
 
         // Sky.
         Sprite sky = ChristmasArt.CreateSkySprite();

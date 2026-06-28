@@ -10,7 +10,7 @@ public class BoardController : MonoBehaviour
     [Header("Board Settings")]
     public float cellSize = 0.7f;
     public float cellGap = 0.1f;
-    public Vector3 boardOrigin = new Vector3(0f, -0.5f, 0f);
+    public Vector3 boardOrigin = new Vector3(0f, -0.7f, 0f);
 
     [Header("References")]
     public GameManager gameManager;
@@ -19,6 +19,7 @@ public class BoardController : MonoBehaviour
     private int _rows;
     private int _cols;
     private GameObject _boardRoot;
+    private Sprite _cellBgSprite;
 
     public CellData[,] Cells => _cells;
     public int Rows => _rows;
@@ -42,7 +43,7 @@ public class BoardController : MonoBehaviour
         float spacing = cellSize + cellGap;
         return new Vector3(
             -(cols - 1) * spacing * 0.5f,
-            (rows - 1) * spacing * 0.5f,
+            (rows - 1) * spacing * 0.5f - 0.9f, // shift down to clear TopBar
             0f
         );
     }
@@ -68,8 +69,22 @@ public class BoardController : MonoBehaviour
         _cells = new CellData[_rows, _cols];
         boardOrigin = ComputeBoardOrigin(_rows, _cols);
 
+        // Create cell background sprite (shared, 9-slice for any cell size)
+        // Matches HTML .cell: background rgba(255,255,255,0.08), border rgba(255,255,255,0.10)
+        // border-radius 8px. Boosted alpha for visibility in Unity.
+        _cellBgSprite = GlassPanelTexture.CreateGlassPanel(
+            96, 18f,
+            new Color(1f, 1f, 1f, 0.10f),   // more transparent glass fill
+            0.20f,   // border highlight
+            0.08f,   // subtle top glow
+            0.025f   // stronger noise for fake blur
+        );
+
         _boardRoot = new GameObject("BoardRoot");
         _boardRoot.transform.SetParent(transform);
+
+        // Create cell backgrounds (fixed in position, don't move during swaps)
+        CreateCellBackgrounds();
 
         for (int row = 0; row < _rows; row++)
         {
@@ -78,6 +93,43 @@ public class BoardController : MonoBehaviour
                 ElementType type = grid[row, col].elementType;
                 if (type == ElementType.Empty) continue;
                 CreateCell(row, col, type);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Creates subtle glass background tiles for each cell position.
+    /// These stay fixed during swaps/matches — only the element sprites move.
+    /// sortingOrder 0: above BoardBackdrop (-1), below elements (1).
+    /// </summary>
+    private void CreateCellBackgrounds()
+    {
+        if (_cellBgSprite == null) return;
+
+        GameObject bgRoot = new GameObject("CellBackgrounds");
+        bgRoot.transform.SetParent(_boardRoot.transform);
+
+        float bgScale = cellSize * 0.88f; // slightly smaller than cell for gap
+
+        for (int row = 0; row < _rows; row++)
+        {
+            for (int col = 0; col < _cols; col++)
+            {
+                Vector3 pos = new CellData { row = row, col = col }
+                    .WorldPosition(cellSize, cellGap, boardOrigin);
+
+                GameObject bgGO = new GameObject($"CellBg_{row}_{col}");
+                bgGO.transform.SetParent(bgRoot.transform);
+                bgGO.transform.position = pos;
+                bgGO.transform.localScale = Vector3.one;
+
+                SpriteRenderer bgSr = bgGO.AddComponent<SpriteRenderer>();
+                bgSr.sprite = _cellBgSprite;
+                bgSr.sortingOrder = 0;
+                bgSr.color = Color.white;
+                // Use Sliced draw mode so 9-slice borders produce round corners
+                bgSr.drawMode = SpriteDrawMode.Sliced;
+                bgSr.size = new Vector2(bgScale, bgScale);
             }
         }
     }

@@ -4,6 +4,9 @@ using TMPro;
 
 /// <summary>
 /// Top bar UI showing target (suitcase) count and remaining steps.
+/// Uses Apple-style glassmorphism panel with frosted glass appearance,
+/// rounded corners, and typographic hierarchy.
+/// Canvas reference resolution matches PhoneFrame (390×844) for consistent layout.
 /// </summary>
 public class TopBarView : MonoBehaviour
 {
@@ -12,6 +15,10 @@ public class TopBarView : MonoBehaviour
     public TextMeshProUGUI stepsText;
     public GameObject targetIcon;
     public GameObject stepsIcon;
+
+    [Header("Optional Icon Sprites (leave null for no icons)")]
+    public Sprite giftIconSprite;
+    public Sprite stepsIconSprite;
 
     private GameManager _gameManager;
 
@@ -28,7 +35,7 @@ public class TopBarView : MonoBehaviour
 
     private void CreateUI()
     {
-        // Create Canvas
+        // Create Canvas — same reference resolution as PhoneFrame for alignment
         GameObject canvasGO = new GameObject("TopBarCanvas");
         canvasGO.transform.SetParent(transform);
         Canvas canvas = canvasGO.AddComponent<Canvas>();
@@ -36,62 +43,145 @@ public class TopBarView : MonoBehaviour
         canvas.sortingOrder = 10;
         CanvasScaler scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1080, 1920);
+        scaler.referenceResolution = new Vector2(390, 844);
+        scaler.matchWidthOrHeight = 0f; // match width (portrait, same as PhoneFrame)
         GraphicRaycaster raycaster = canvasGO.AddComponent<GraphicRaycaster>();
 
-        // Background panel
+        // ── Glassmorphism background panel ──
+        // Frosted glass: semi-transparent white with gradient, border, rounded corners.
+        // Uses rectangular texture at the TopBar's actual aspect ratio (~6.5:1)
+        // so rounded corners are never stretched.
+        // Position: anchored from top of screen, moved higher per user request.
+        Sprite glassSprite = GlassPanelTexture.CreateRectGlassPanel(
+            448, 80, 28f,
+            new Color(1f, 1f, 1f, 0.15f),   // more transparent glass fill
+            0.28f,   // border highlight
+            0.12f,   // top glow
+            0.030f   // stronger noise for fake blur
+        );
+
         GameObject panel = new GameObject("TopBarPanel");
         panel.transform.SetParent(canvasGO.transform);
         RectTransform panelRT = panel.AddComponent<RectTransform>();
         panelRT.anchorMin = new Vector2(0f, 1f);
         panelRT.anchorMax = new Vector2(1f, 1f);
         panelRT.pivot = new Vector2(0.5f, 1f);
-        panelRT.anchoredPosition = new Vector2(0f, -10f);
-        panelRT.sizeDelta = new Vector2(0f, 100f);
+        panelRT.anchoredPosition = new Vector2(0f, -12f); // moved up to clear board
+        panelRT.sizeDelta = new Vector2(-24f, 56f); // 12px margin each side, 56px tall (matches HTML)
         UnityEngine.UI.Image panelImg = panel.AddComponent<UnityEngine.UI.Image>();
-        panelImg.color = new Color(0f, 0f, 0f, 0.5f);
+        panelImg.sprite = glassSprite;
+        panelImg.type = Image.Type.Sliced;
+        panelImg.color = Color.white;
 
-        // Target text
-        GameObject targetGO = new GameObject("TargetText");
-        targetGO.transform.SetParent(panel.transform);
-        RectTransform targetRT = targetGO.AddComponent<RectTransform>();
-        targetRT.anchorMin = new Vector2(0.5f, 0.5f);
-        targetRT.anchorMax = new Vector2(0.5f, 0.5f);
-        targetRT.pivot = new Vector2(0.5f, 0.5f);
-        targetRT.anchoredPosition = new Vector2(-150f, -20f);
-        targetRT.sizeDelta = new Vector2(200f, 60f);
-        targetText = targetGO.AddComponent<TextMeshProUGUI>();
-        targetText.fontSize = 36;
-        targetText.alignment = TextAlignmentOptions.Center;
-        targetText.color = Color.white;
-        targetText.text = "Suitcase: 33";
+        // ── Target side (left: icon + count + label) ──
+        // Target gift icon
+        if (giftIconSprite != null)
+        {
+            GameObject targetIconGO = new GameObject("TargetIcon");
+            targetIconGO.transform.SetParent(panel.transform);
+            RectTransform targetIconRT = targetIconGO.AddComponent<RectTransform>();
+            targetIconRT.anchorMin = new Vector2(0f, 0.5f);
+            targetIconRT.anchorMax = new Vector2(0f, 0.5f);
+            targetIconRT.pivot = new Vector2(0.5f, 0.5f);
+            targetIconRT.anchoredPosition = new Vector2(28f, 0f);
+            targetIconRT.sizeDelta = new Vector2(28f, 28f);
+            UnityEngine.UI.Image targetImg = targetIconGO.AddComponent<UnityEngine.UI.Image>();
+            targetImg.sprite = giftIconSprite;
+            targetImg.preserveAspect = true;
+        }
 
-        // Steps text
-        GameObject stepsGO = new GameObject("StepsText");
-        stepsGO.transform.SetParent(panel.transform);
-        RectTransform stepsRT = stepsGO.AddComponent<RectTransform>();
-        stepsRT.anchorMin = new Vector2(0.5f, 0.5f);
-        stepsRT.anchorMax = new Vector2(0.5f, 0.5f);
-        stepsRT.pivot = new Vector2(0.5f, 0.5f);
-        stepsRT.anchoredPosition = new Vector2(150f, -20f);
-        stepsRT.sizeDelta = new Vector2(200f, 60f);
-        stepsText = stepsGO.AddComponent<TextMeshProUGUI>();
-        stepsText.fontSize = 36;
-        stepsText.alignment = TextAlignmentOptions.Center;
-        stepsText.color = Color.white;
-        stepsText.text = "Steps: 25";
+        // Target count (big number)
+        GameObject targetCountGO = new GameObject("TargetCount");
+        targetCountGO.transform.SetParent(panel.transform);
+        RectTransform targetCountRT = targetCountGO.AddComponent<RectTransform>();
+        targetCountRT.anchorMin = new Vector2(0f, 0.5f);
+        targetCountRT.anchorMax = new Vector2(0f, 0.5f);
+        targetCountRT.pivot = new Vector2(0f, 0.5f);
+        targetCountRT.anchoredPosition = new Vector2(48f, 2f);
+        targetCountRT.sizeDelta = new Vector2(60f, 28f);
+        targetText = targetCountGO.AddComponent<TextMeshProUGUI>();
+        targetText.fontSize = 20;
+        targetText.fontStyle = FontStyles.Bold;
+        targetText.alignment = TextAlignmentOptions.Left;
+        targetText.color = new Color(1f, 1f, 1f, 0.95f);
+        targetText.text = "33";
 
-        // Store references
-        targetIcon = targetGO;
-        stepsIcon = stepsGO;
+        // Target label (small text under count)
+        GameObject targetLabelGO = new GameObject("TargetLabel");
+        targetLabelGO.transform.SetParent(panel.transform);
+        RectTransform targetLabelRT = targetLabelGO.AddComponent<RectTransform>();
+        targetLabelRT.anchorMin = new Vector2(0f, 0.5f);
+        targetLabelRT.anchorMax = new Vector2(0f, 0.5f);
+        targetLabelRT.pivot = new Vector2(0f, 0.5f);
+        targetLabelRT.anchoredPosition = new Vector2(48f, -14f);
+        targetLabelRT.sizeDelta = new Vector2(60f, 14f);
+        TextMeshProUGUI targetLabel = targetLabelGO.AddComponent<TextMeshProUGUI>();
+        targetLabel.fontSize = 9;
+        targetLabel.fontStyle = FontStyles.Bold;
+        targetLabel.alignment = TextAlignmentOptions.Left;
+        targetLabel.color = new Color(1f, 1f, 1f, 0.5f);
+        targetLabel.text = "GIFTS";
+
+        // ── Steps side (right: label + count + icon) ──
+        // Steps count
+        GameObject stepsCountGO = new GameObject("StepsCount");
+        stepsCountGO.transform.SetParent(panel.transform);
+        RectTransform stepsCountRT = stepsCountGO.AddComponent<RectTransform>();
+        stepsCountRT.anchorMin = new Vector2(1f, 0.5f);
+        stepsCountRT.anchorMax = new Vector2(1f, 0.5f);
+        stepsCountRT.pivot = new Vector2(1f, 0.5f);
+        stepsCountRT.anchoredPosition = new Vector2(-48f, 2f);
+        stepsCountRT.sizeDelta = new Vector2(60f, 28f);
+        stepsText = stepsCountGO.AddComponent<TextMeshProUGUI>();
+        stepsText.fontSize = 20;
+        stepsText.fontStyle = FontStyles.Bold;
+        stepsText.alignment = TextAlignmentOptions.Right;
+        stepsText.color = new Color(1f, 1f, 1f, 0.95f);
+        stepsText.text = "25";
+
+        // Steps label
+        GameObject stepsLabelGO = new GameObject("StepsLabel");
+        stepsLabelGO.transform.SetParent(panel.transform);
+        RectTransform stepsLabelRT = stepsLabelGO.AddComponent<RectTransform>();
+        stepsLabelRT.anchorMin = new Vector2(1f, 0.5f);
+        stepsLabelRT.anchorMax = new Vector2(1f, 0.5f);
+        stepsLabelRT.pivot = new Vector2(1f, 0.5f);
+        stepsLabelRT.anchoredPosition = new Vector2(-48f, -14f);
+        stepsLabelRT.sizeDelta = new Vector2(60f, 14f);
+        TextMeshProUGUI stepsLabel = stepsLabelGO.AddComponent<TextMeshProUGUI>();
+        stepsLabel.fontSize = 9;
+        stepsLabel.fontStyle = FontStyles.Bold;
+        stepsLabel.alignment = TextAlignmentOptions.Right;
+        stepsLabel.color = new Color(1f, 1f, 1f, 0.5f);
+        stepsLabel.text = "STEPS";
+
+        // Steps icon
+        if (stepsIconSprite != null)
+        {
+            GameObject stepsIconGO = new GameObject("StepsIcon");
+            stepsIconGO.transform.SetParent(panel.transform);
+            RectTransform stepsIconRT = stepsIconGO.AddComponent<RectTransform>();
+            stepsIconRT.anchorMin = new Vector2(1f, 0.5f);
+            stepsIconRT.anchorMax = new Vector2(1f, 0.5f);
+            stepsIconRT.pivot = new Vector2(0.5f, 0.5f);
+            stepsIconRT.anchoredPosition = new Vector2(-28f, 0f);
+            stepsIconRT.sizeDelta = new Vector2(24f, 24f);
+            UnityEngine.UI.Image stepsImg = stepsIconGO.AddComponent<UnityEngine.UI.Image>();
+            stepsImg.sprite = stepsIconSprite;
+            stepsImg.preserveAspect = true;
+        }
+
+        // Store references for TargetPresentation flyers
+        targetIcon = giftIconSprite != null ? panel.transform.Find("TargetIcon")?.gameObject : targetCountGO;
+        stepsIcon = stepsCountGO;
     }
 
     public void UpdateTopBar(int suitcases, int steps)
     {
         if (targetText != null)
-            targetText.text = $"Suitcase: {suitcases}";
+            targetText.text = $"{suitcases}";
         if (stepsText != null)
-            stepsText.text = $"Steps: {steps}";
+            stepsText.text = $"{steps}";
     }
 
     /// <summary>

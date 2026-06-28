@@ -31,6 +31,11 @@ public class VisualTheme : ScriptableObject
     public Sprite spriteGreen;
     public Sprite spriteSuitcase;
 
+    [Header("Optional Special Sprite Overrides (leave null for procedural)")]
+    public Sprite spriteRocket;
+    public Sprite spriteBomb;
+    public Sprite spritePropeller;
+
     private readonly Dictionary<Color, Sprite> _circleCache = new Dictionary<Color, Sprite>();
     private Sprite _suitcaseCache;
     private readonly Dictionary<Color, Sprite> _rocketCache = new Dictionary<Color, Sprite>();
@@ -91,6 +96,7 @@ public class VisualTheme : ScriptableObject
 
     public Sprite GetRocketSprite(ElementType type)
     {
+        if (spriteRocket != null) return spriteRocket;
         Color c = GetColorForType(type);
         if (!_rocketCache.ContainsKey(c))
             _rocketCache[c] = SpriteGenerator.CreateRocketSprite(c);
@@ -99,6 +105,7 @@ public class VisualTheme : ScriptableObject
 
     public Sprite GetBombSprite(ElementType type)
     {
+        if (spriteBomb != null) return spriteBomb;
         Color c = GetColorForType(type);
         if (!_bombCache.ContainsKey(c))
             _bombCache[c] = SpriteGenerator.CreateBombSprite(c);
@@ -107,6 +114,7 @@ public class VisualTheme : ScriptableObject
 
     public Sprite GetPropellerSprite(ElementType type)
     {
+        if (spritePropeller != null) return spritePropeller;
         Color c = GetColorForType(type);
         if (!_propellerCache.ContainsKey(c))
             _propellerCache[c] = SpriteGenerator.CreatePropellerSprite(c);
