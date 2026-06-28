@@ -5,6 +5,27 @@ using UnityEngine;
 /// </summary>
 public static class SpriteGenerator
 {
+    public static Sprite CreateRadialGlowSprite(Color color, int size = 96)
+    {
+        Texture2D tex = new Texture2D(size, size);
+        tex.filterMode = FilterMode.Bilinear;
+        tex.wrapMode = TextureWrapMode.Clamp;
+
+        Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+        float radius = size * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float normalized = Mathf.Clamp01(Vector2.Distance(new Vector2(x, y), center) / radius);
+                float alpha = color.a * Mathf.Pow(1f - normalized, 2f);
+                tex.SetPixel(x, y, new Color(color.r, color.g, color.b, alpha));
+            }
+        }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
+
     public static Sprite CreateCircleSprite(Color color, int size = 64)
     {
         Texture2D tex = new Texture2D(size, size);

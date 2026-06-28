@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// Stable scene entry point. Place a single Bootstrap GameObject in the
@@ -14,7 +15,33 @@ using UnityEngine;
 [DefaultExecutionOrder(-100)]
 public class Bootstrap : MonoBehaviour
 {
+    private const int PlayableSceneBuildIndex = 0;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void EnsurePlayableEntry()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        bool canLoadPlayableScene = Application.CanStreamedLevelBeLoaded(PlayableSceneBuildIndex);
+        if (ShouldLoadPlayableScene(activeScene.path, canLoadPlayableScene))
+        {
+            SceneManager.LoadScene(PlayableSceneBuildIndex, LoadSceneMode.Single);
+            return;
+        }
+
+        EnsureRuntimeObjects();
+    }
+
+    public static bool ShouldLoadPlayableScene(string activeScenePath, bool canLoadPlayableScene)
+    {
+        return string.IsNullOrEmpty(activeScenePath) && canLoadPlayableScene;
+    }
+
     private void Awake()
+    {
+        EnsureRuntimeObjects();
+    }
+
+    private static void EnsureRuntimeObjects()
     {
         // Ensure an orthographic 2D camera exists; the SampleScene ships with
         // one tagged MainCamera, but a freshly-created scene might not.

@@ -23,7 +23,8 @@ using TMPro;
 ///        d. Aftermath: chest glow dims to a faint pulse; effects fade.
 ///   4. Retry / Replay buttons. Replay re-runs the finale; Retry reloads.
 /// Lose still uses the simple ResultDialog (this sequence is win-only).
-/// All art is procedural; Phase E will upgrade to pooled particles + sound.
+/// The chest uses five authored 2D poses with a procedural fallback; effects
+/// and sound remain runtime-driven so the sequence is portable to builds.
 /// </summary>
 public class WinSequence : MonoBehaviour
 {
@@ -31,9 +32,13 @@ public class WinSequence : MonoBehaviour
     private Canvas _canvas;
     private readonly List<GameObject> _spawned = new List<GameObject>();
 
-    private Transform _lidHinge;
-    private Transform _chestBody;
+    private Transform _chestVisual;
     private SpriteRenderer _chestGlow;
+    private SpriteRenderer _closedChestFrame;
+    private SpriteRenderer _crackedChestFrame;
+    private SpriteRenderer _ajarChestFrame;
+    private SpriteRenderer _wideChestFrame;
+    private SpriteRenderer _openChestFrame;
 
     public void Init(GameManager gm) { _gm = gm; }
 
@@ -182,11 +187,12 @@ public class WinSequence : MonoBehaviour
         chest.transform.localScale = Vector3.zero;
         _spawned.Add(chest);
 
-        // Pop the chest in.
-        yield return ScaleTo(chest.transform, 2.1f, 0.25f);
+        // Pop the authored chest in at its final presentation scale. Each
+        // imported frame shares an identical canvas/pivot, so the body stays
+        // anchored while only the lid pose changes.
+        yield return ScaleTo(chest.transform, 1f, 0.25f);
 
-        // Mouth = lid seam (where effects emerge). Chest root is at y=-0.2,
-        // hinge at local y=0 -> world y=-0.2; "mouth" just above the seam.
+        // Mouth = the stable lid seam shared by all authored frames.
         Vector3 mouth = chest.transform.position + new Vector3(0f, 0.05f, 0f);
 
         // Phase 1: seal-break (lid lift + beam + tremor + sparks + snap + shockwave).
@@ -212,146 +218,123 @@ public class WinSequence : MonoBehaviour
     private GameObject CreateChest()
     {
         GameObject root = new GameObject("Chest");
+        _chestVisual = root.transform;
 
         // Glow behind the chest (phase 4 pulse).
         GameObject glow = new GameObject("Glow");
         glow.transform.SetParent(root.transform, false);
         SpriteRenderer gsr = glow.AddComponent<SpriteRenderer>();
-        gsr.sprite = SpriteGenerator.CreateCircleSprite(new Color(1f, 0.8f, 0.3f, 0.45f));
+        gsr.sprite = SpriteGenerator.CreateRadialGlowSprite(new Color(1f, 0.76f, 0.22f, 1f));
+        gsr.color = new Color(1f, 0.86f, 0.48f, 0.46f);
         gsr.sortingOrder = 49;
         glow.transform.localPosition = new Vector3(0f, -0.1f, 0f);
-        glow.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
+        glow.transform.localScale = new Vector3(5.4f, 5.4f, 1f);
         _chestGlow = gsr;
 
-        // Body (80x56 sprite, 0.80x0.56 world @100PPU).
-        GameObject body = new GameObject("Body");
-        body.transform.SetParent(root.transform, false);
-        SpriteRenderer bsr = body.AddComponent<SpriteRenderer>();
-        bsr.sprite = SpriteGenerator.CreateChestBodySprite();
-        bsr.sortingOrder = 51;
-        body.transform.localPosition = new Vector3(0f, -0.28f, 0f);
-        _chestBody = body.transform;
+        Sprite closed = Resources.Load<Sprite>("VictoryChest/ChestClosed");
+        Sprite cracked = Resources.Load<Sprite>("VictoryChest/ChestCracked");
+        Sprite ajar = Resources.Load<Sprite>("VictoryChest/ChestAjar");
+        Sprite wide = Resources.Load<Sprite>("VictoryChest/ChestWide");
+        Sprite open = Resources.Load<Sprite>("VictoryChest/ChestOpen");
 
-        // Lid hinge at the BACK edge of the seam (right-top corner of the body,
-        // = the lid's back-bottom corner). The lid extends left (front) from
-        // this hinge and rotates around it as a rigid body, so only the front
-        // edge arcs up — not a pendulum swing from the lid's center.
-        GameObject hinge = new GameObject("LidHinge");
-        hinge.transform.SetParent(root.transform, false);
-        hinge.transform.localPosition = new Vector3(0.4f, 0f, 0f);
-        _lidHinge = hinge.transform;
+        if (closed == null || cracked == null || ajar == null || wide == null || open == null)
+        {
+            Debug.LogWarning("[WinSequence] Victory chest sprites are incomplete; using procedural fallback frames.");
+            Sprite fallback = SpriteGenerator.CreateSuitcaseSprite(new Color(0.72f, 0.33f, 0.11f));
+            closed = closed != null ? closed : fallback;
+            cracked = cracked != null ? cracked : fallback;
+            ajar = ajar != null ? ajar : fallback;
+            wide = wide != null ? wide : fallback;
+            open = open != null ? open : fallback;
+        }
 
-        // Lid (80x28 sprite) extends left from the hinge when closed, lying on
-        // top of the body. localPosition (-0.4, 0.14) puts the lid's right
-        // edge + bottom at the hinge, so it spans chest-root x in [-0.4,0.4],
-        // y in [0, 0.28].
-        GameObject lid = new GameObject("Lid");
-        lid.transform.SetParent(hinge.transform, false);
-        SpriteRenderer lsr = lid.AddComponent<SpriteRenderer>();
-        lsr.sprite = SpriteGenerator.CreateChestLidSprite();
-        lsr.sortingOrder = 52;
-        lid.transform.localPosition = new Vector3(-0.4f, 0.14f, 0f);
+        // Per-frame scale/offset values align the body baseline and width. The
+        // lid changes pose while the lower chest reads as one stationary prop.
+        _closedChestFrame = CreateChestFrame(root.transform, "Closed", closed, 1f, 0.269f, -0.135f);
+        _crackedChestFrame = CreateChestFrame(root.transform, "Cracked", cracked, 0f, 0.338f, -0.328f);
+        _ajarChestFrame = CreateChestFrame(root.transform, "Ajar", ajar, 0f, 0.280f, 0f);
+        _wideChestFrame = CreateChestFrame(root.transform, "Wide", wide, 0f, 0.363f, 0.107f);
+        _openChestFrame = CreateChestFrame(root.transform, "Open", open, 0f, 0.280f, 0f);
 
         return root;
     }
 
-    // --- Phase 1: seal-break (three-stage rigid-body rotation around the hinge) ---
+    private SpriteRenderer CreateChestFrame(
+        Transform parent, string name, Sprite sprite, float alpha, float authoredScale, float authoredY)
+    {
+        GameObject frame = new GameObject(name);
+        frame.transform.SetParent(parent, false);
+        bool authored = sprite != null && sprite.rect.width > 256f;
+        frame.transform.localScale = authored ? Vector3.one * authoredScale : Vector3.one * 5.2f;
+        frame.transform.localPosition = authored ? Vector3.up * authoredY : Vector3.zero;
+        SpriteRenderer renderer = frame.AddComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.sortingOrder = 51;
+        renderer.color = new Color(1f, 1f, 1f, alpha);
+        return renderer;
+    }
+
+    // --- Phase 1: seal-break (authored rigid-body poses around a rear hinge) ---
 
     private IEnumerator LiftLid(Vector3 mouth)
     {
-        // Gold light beam leaking from the crack, placed at the FRONT of the
-        // seam (where the lid lifts first). Sibling of the hinge (chest root).
-        SpriteRenderer beamSr = null;
-        if (_lidHinge != null && _lidHinge.parent != null)
+        GameObject beam = new GameObject("ChestMouthLight");
+        SpriteRenderer beamSr = beam.AddComponent<SpriteRenderer>();
+        beamSr.sprite = SpriteGenerator.CreateCircleSprite(new Color(1f, 0.82f, 0.28f));
+        beamSr.color = new Color(1f, 0.82f, 0.28f, 0f);
+        beamSr.sortingOrder = 50;
+        beam.transform.position = mouth + Vector3.up * 0.12f;
+        beam.transform.localScale = new Vector3(2.4f, 0.8f, 1f);
+        _spawned.Add(beam);
+
+        Vector3 visualBase = _chestVisual != null ? _chestVisual.position : Vector3.zero;
+        float elapsed = 0f;
+        float nextSpark = 0.08f;
+        while (elapsed < VictoryChestMotion.OpeningDuration)
         {
-            GameObject beam = new GameObject("Beam");
-            beam.transform.SetParent(_lidHinge.parent, false);
-            beam.transform.localPosition = new Vector3(-0.2f, 0.1f, 0f);
-            beamSr = beam.AddComponent<SpriteRenderer>();
-            beamSr.sprite = SpriteGenerator.CreateSquareSprite(new Color(1f, 0.85f, 0.4f));
-            beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
-            beamSr.sortingOrder = 50;
-            beam.transform.localScale = new Vector3(0.15f, 1.5f, 1f);
-            _spawned.Add(beam);
-        }
+            elapsed += Time.deltaTime;
+            float progress = VictoryChestMotion.NormalizedProgress(elapsed);
+            VictoryChestMotion.Weights weights = VictoryChestMotion.Evaluate(progress);
+            SetChestFrameWeights(weights);
 
-        Vector3 bodyBase = _chestBody != null ? _chestBody.localPosition : Vector3.zero;
+            float anticipation = Mathf.Sin(Mathf.Clamp01(progress / 0.20f) * Mathf.PI);
+            if (_chestVisual != null)
+            {
+                _chestVisual.localScale = new Vector3(1f + anticipation * 0.025f, 1f - anticipation * 0.035f, 1f);
+                float tremor = progress < 0.54f ? 0.014f * (1f - progress) : 0f;
+                _chestVisual.position = visualBase + (Vector3)Random.insideUnitCircle * tremor;
+            }
 
-        // The lid extends in -x from the hinge, so a NEGATIVE z rotation (CW)
-        // swings the front edge up = opening. Angles below are negative.
+            float light = Mathf.Clamp01(
+                weights.cracked * 0.18f + weights.ajar * 0.45f + weights.wide * 0.78f + weights.open);
+            beamSr.color = new Color(1f, 0.82f, 0.28f, light * 0.72f);
+            beam.transform.localScale = new Vector3(2.2f + light * 1.2f, 0.55f + light * 1.05f, 1f);
 
-        // Stage 1 "蓄力微启" (0~0.1s): 0 -> -6°, EaseIn (slow start, the lid
-        // is gently nudged by the internal force; light leaks from the crack).
-        float e = 0f;
-        while (e < 0.1f)
-        {
-            e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.1f);
-            float ti = t * t; // EaseIn
-            float angle = Mathf.Lerp(0f, -6f, ti);
-            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
-            SetBeam(beamSr, Mathf.Abs(angle));
-            Tremor(_chestBody, bodyBase, 0.008f);
-            if (Random.value < 0.25f) StartCoroutine(Spark(mouth));
+            if (elapsed >= nextSpark)
+            {
+                StartCoroutine(Spark(mouth));
+                nextSpark += 0.08f;
+            }
             yield return null;
         }
 
-        // Stage 2 "主开合" (0.1~0.2s): -6 -> -75°, EaseInOut (accelerate then
-        // decelerate; the front edge arcs up fast, slowing near 70-80°).
-        e = 0f;
-        while (e < 0.1f)
+        if (_chestVisual != null)
         {
-            e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.1f);
-            float tio = t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f; // EaseInOut
-            float angle = Mathf.Lerp(-6f, -75f, tio);
-            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
-            SetBeam(beamSr, Mathf.Abs(angle));
-            Tremor(_chestBody, bodyBase, 0.014f);
-            if (Random.value < 0.5f) StartCoroutine(Spark(mouth));
-            yield return null;
+            _chestVisual.position = visualBase;
+            _chestVisual.localScale = Vector3.one;
         }
-
-        // Stage 3 "弹顶回弹" (0.2~0.4s): overshoot to -105° (past vertical),
-        // then rebound to settle at -95° — a snappy finish.
-        e = 0f;
-        while (e < 0.1f)
-        {
-            e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.1f);
-            float angle = Mathf.Lerp(-75f, -105f, t);
-            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
-            SetBeam(beamSr, Mathf.Abs(angle));
-            yield return null;
-        }
-        e = 0f;
-        while (e < 0.1f)
-        {
-            e += Time.deltaTime;
-            float t = Mathf.Clamp01(e / 0.1f);
-            float angle = Mathf.Lerp(-105f, -95f, t); // rebound to settle
-            if (_lidHinge != null) _lidHinge.localRotation = Quaternion.Euler(0f, 0f, angle);
-            SetBeam(beamSr, Mathf.Abs(angle));
-            yield return null;
-        }
-
-        // Open complete: hide beam + shockwave.
-        if (beamSr != null) beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
+        SetChestFrameWeights(VictoryChestMotion.Evaluate(1f));
+        beamSr.color = new Color(1f, 0.85f, 0.4f, 0f);
         StartCoroutine(Shockwave(mouth));
     }
 
-    private void SetBeam(SpriteRenderer sr, float angle)
+    private void SetChestFrameWeights(VictoryChestMotion.Weights weights)
     {
-        if (sr == null) return;
-        // Intensity grows with the opening angle (0 -> ~95°).
-        float k = Mathf.Clamp01(angle / 95f);
-        sr.color = new Color(1f, 0.85f, 0.4f, k * 0.85f);
-    }
-
-    private void Tremor(Transform body, Vector3 basePos, float amp)
-    {
-        if (body == null) return;
-        body.localPosition = basePos + (Vector3)Random.insideUnitCircle * amp;
+        if (_closedChestFrame != null) _closedChestFrame.color = new Color(1f, 1f, 1f, weights.closed);
+        if (_crackedChestFrame != null) _crackedChestFrame.color = new Color(1f, 1f, 1f, weights.cracked);
+        if (_ajarChestFrame != null) _ajarChestFrame.color = new Color(1f, 1f, 1f, weights.ajar);
+        if (_wideChestFrame != null) _wideChestFrame.color = new Color(1f, 1f, 1f, weights.wide);
+        if (_openChestFrame != null) _openChestFrame.color = new Color(1f, 1f, 1f, weights.open);
     }
 
     private IEnumerator Spark(Vector3 origin)
@@ -698,8 +681,8 @@ public class WinSequence : MonoBehaviour
 
     private void ShowButtons()
     {
-        CreateButton("Retry", new Vector2(0f, -250f), () => ReloadScene());
-        CreateButton("Replay", new Vector2(0f, -305f), () => Replay());
+        CreateButton("Retry", new Vector2(0f, VictoryChestMotion.RetryButtonY), () => ReloadScene());
+        CreateButton("Replay", new Vector2(0f, VictoryChestMotion.ReplayButtonY), () => Replay());
     }
 
     private void CreateButton(string label, Vector2 anchorPos, System.Action onClick)
@@ -772,9 +755,13 @@ public class WinSequence : MonoBehaviour
             if (_spawned[i] != null) Destroy(_spawned[i]);
         }
         _spawned.Clear();
-        _lidHinge = null;
-        _chestBody = null;
+        _chestVisual = null;
         _chestGlow = null;
+        _closedChestFrame = null;
+        _crackedChestFrame = null;
+        _ajarChestFrame = null;
+        _wideChestFrame = null;
+        _openChestFrame = null;
         CreateCanvas();
     }
 

@@ -16,17 +16,19 @@
 - 重做顶部目标胶囊与步数徽章，优化 820×1022 竖屏安全区和信息层级。
 - 加强火箭蓄力与喷口、炸弹压缩爆发、螺旋桨起飞、目标弧线飞行和抵达反馈。
 - 重排胜利画面，隐藏游戏 HUD，校正 Great、宝箱、Retry、Replay 的竖屏位置与尺度。
+- 将错误的平面侧翻盖替换为闭合、微启、半开、大开、全开五段后沿铰链动画；统一箱体底边和宽度，加入软径向内光与 60 FPS 帧间溶解。
+- 增加运行时与 Editor 双层空场景保护，批量测试清空场景历史后仍能自动回到磁盘中的可玩场景。
 - 行李箱明确作为障碍物，不再参与普通颜色匹配。
 
 ## 自动化验收证据
 
-- EditMode：32/32 通过，0 failed，见 `Artifacts/Acceptance/editmode-results.xml`。
+- EditMode：49/49 通过，0 failed，见 `Artifacts/Acceptance/editmode-results.xml`。
 - 编译：Unity 批处理编译退出码 0，见 `Artifacts/Acceptance/compile.log`。
 - 构建：macOS Release Player 构建成功，见 `Artifacts/Acceptance/build.log`。
 - 运行：自动演示完整走过初始棋盘、三种特殊道具、目标收集、级联稳定与胜利演出，并生成 `acceptance-complete.txt`。
 - 日志：`player.log`、`video-player.log` 未发现 C# 编译错误、未处理异常、NullReference、MissingReference 或 FMOD 初始化错误。
 - 画面：5 张 820×1022 PNG 已逐张检查，未发现开发控制台、缺图、越界或遮挡。
-- 录屏：`happy-match-polish-demo.mp4`，16.8 秒，H.264 820×1022，AAC 48 kHz 双声道；结尾已裁切在胜利画面，无桌面内容泄露。
+- 录屏：`happy-match-polish-demo.mp4`，13.0 秒，H.264 820×1022、60 FPS，AAC 48 kHz 双声道；前段保留真实目标清除流程，后段展示五段开盖与最终胜利画面，无桌面内容泄露。
 
 ## 验收入口
 
