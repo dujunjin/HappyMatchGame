@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="32" result="Passed" total="32" passed="32" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.1490653">
+  <test-suite type="TestSuite" id="1046" name="HappyMatchGame" fullname="HappyMatchGame" runstate="Runnable" testcasecount="32" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.149065" total="32" passed="32" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties />
+    <test-suite type="Assembly" id="1087" name="HappyMatch.EditModeTests.dll" fullname="/Users/dujunjin/.config/superpowers/worktrees/HappyMatchGame/happy-match-polish/Library/ScriptAssemblies/HappyMatch.EditModeTests.dll" runstate="Runnable" testcasecount="32" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.126970" total="32" passed="32" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="50667" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+      </properties>
+      <test-suite type="TestFixture" id="1047" name="AcceptanceDirectorTests" fullname="AcceptanceDirectorTests" classname="AcceptanceDirectorTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.035474" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1051" name="OutputDirectory_AcceptsEnvironmentValue" fullname="AcceptanceDirectorTests.OutputDirectory_AcceptsEnvironmentValue" methodname="OutputDirectory_AcceptsEnvironmentValue" classname="AcceptanceDirectorTests" runstate="Runnable" seed="1509710057" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.004547" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1049" name="OutputDirectory_UsesValueAfterFlag" fullname="AcceptanceDirectorTests.OutputDirectory_UsesValueAfterFlag" methodname="OutputDirectory_UsesValueAfterFlag" classname="AcceptanceDirectorTests" runstate="Runnable" seed="545581753" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000183" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1050" name="ShouldRun_AcceptsEnvironmentFlag" fullname="AcceptanceDirectorTests.ShouldRun_AcceptsEnvironmentFlag" methodname="ShouldRun_AcceptsEnvironmentFlag" classname="AcceptanceDirectorTests" runstate="Runnable" seed="508937436" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000449" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1048" name="ShouldRun_RequiresAcceptanceFlag" fullname="AcceptanceDirectorTests.ShouldRun_RequiresAcceptanceFlag" methodname="ShouldRun_RequiresAcceptanceFlag" classname="AcceptanceDirectorTests" runstate="Runnable" seed="625336326" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.021019" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1052" name="BoardGeneratorTests" fullname="BoardGeneratorTests" classname="BoardGeneratorTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.005317" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1055" name="Generate_Default_HasNoOpeningThreeInARow" fullname="BoardGeneratorTests.Generate_Default_HasNoOpeningThreeInARow" methodname="Generate_Default_HasNoOpeningThreeInARow" classname="BoardGeneratorTests" runstate="Runnable" seed="1702718783" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.002159" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1056" name="Generate_Default_LegalSwapProducesMatch" fullname="BoardGeneratorTests.Generate_Default_LegalSwapProducesMatch" methodname="Generate_Default_LegalSwapProducesMatch" classname="BoardGeneratorTests" runstate="Runnable" seed="276677035" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.001185" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1054" name="Generate_Default_PlacesExactly33Suitcases" fullname="BoardGeneratorTests.Generate_Default_PlacesExactly33Suitcases" methodname="Generate_Default_PlacesExactly33Suitcases" classname="BoardGeneratorTests" runstate="Runnable" seed="348817919" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000365" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1053" name="Generate_SameSeed_ProducesIdenticalGrid" fullname="BoardGeneratorTests.Generate_SameSeed_ProducesIdenticalGrid" methodname="Generate_SameSeed_ProducesIdenticalGrid" classname="BoardGeneratorTests" runstate="Runnable" seed="819589259" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000382" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1057" name="WouldCauseMatch_DetectsLeftTwo" fullname="BoardGeneratorTests.WouldCauseMatch_DetectsLeftTwo" methodname="WouldCauseMatch_DetectsLeftTwo" classname="BoardGeneratorTests" runstate="Runnable" seed="1050543278" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000115" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1058" name="GameUITests" fullname="GameUITests" classname="GameUITests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.066176" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1060" name="Init_ReusesConfiguredTopBarChild" fullname="GameUITests.Init_ReusesConfiguredTopBarChild" methodname="Init_ReusesConfiguredTopBarChild" classname="GameUITests" runstate="Runnable" seed="381283913" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000953" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1059" name="TopBarInit_CreatesTargetPillAndStepsBadge" fullname="GameUITests.TopBarInit_CreatesTargetPillAndStepsBadge" methodname="TopBarInit_CreatesTargetPillAndStepsBadge" classname="GameUITests" runstate="Runnable" seed="789090989" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.064762" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1061" name="LevelConfigTests" fullname="LevelConfigTests" classname="LevelConfigTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.002068" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1062" name="Default_HasExpectedDimensions" fullname="LevelConfigTests.Default_HasExpectedDimensions" methodname="Default_HasExpectedDimensions" classname="LevelConfigTests" runstate="Runnable" seed="104919304" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000100" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1063" name="Default_LayoutIsAllNormal_NoExplicitSuitcases" fullname="LevelConfigTests.Default_LayoutIsAllNormal_NoExplicitSuitcases" methodname="Default_LayoutIsAllNormal_NoExplicitSuitcases" classname="LevelConfigTests" runstate="Runnable" seed="372740888" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000089" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1065" name="Default_ToGrid_HasNoThreeInARow" fullname="LevelConfigTests.Default_ToGrid_HasNoThreeInARow" methodname="Default_ToGrid_HasNoThreeInARow" classname="LevelConfigTests" runstate="Runnable" seed="732758994" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000206" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1064" name="Default_ToGrid_MatchesDimensions" fullname="LevelConfigTests.Default_ToGrid_MatchesDimensions" methodname="Default_ToGrid_MatchesDimensions" classname="LevelConfigTests" runstate="Runnable" seed="739324959" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000050" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1066" name="MatchDetectorTests" fullname="MatchDetectorTests" classname="MatchDetectorTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.003678" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1070" name="DetectSpecial_FiveLine_YieldsPropeller" fullname="MatchDetectorTests.DetectSpecial_FiveLine_YieldsPropeller" methodname="DetectSpecial_FiveLine_YieldsPropeller" classname="MatchDetectorTests" runstate="Runnable" seed="758527471" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.002456" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1069" name="DetectSpecial_FourLine_YieldsRocket" fullname="MatchDetectorTests.DetectSpecial_FourLine_YieldsRocket" methodname="DetectSpecial_FourLine_YieldsRocket" classname="MatchDetectorTests" runstate="Runnable" seed="963518915" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000216" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1071" name="DetectSpecial_TJunction_YieldsBomb" fullname="MatchDetectorTests.DetectSpecial_TJunction_YieldsBomb" methodname="DetectSpecial_TJunction_YieldsBomb" classname="MatchDetectorTests" runstate="Runnable" seed="1715734715" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000174" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1067" name="HorizontalThree_ProducesOneMatchOfThree" fullname="MatchDetectorTests.HorizontalThree_ProducesOneMatchOfThree" methodname="HorizontalThree_ProducesOneMatchOfThree" classname="MatchDetectorTests" runstate="Runnable" seed="278705867" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000101" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1068" name="Merge_TShape_UnionsIntoOneGroupOfFive" fullname="MatchDetectorTests.Merge_TShape_UnionsIntoOneGroupOfFive" methodname="Merge_TShape_UnionsIntoOneGroupOfFive" classname="MatchDetectorTests" runstate="Runnable" seed="1308157630" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000128" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1072" name="PieceVisualTests" fullname="PieceVisualTests" classname="PieceVisualTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.005448" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1073" name="Configure_CreatesShadowAndSelectionHalo" fullname="PieceVisualTests.Configure_CreatesShadowAndSelectionHalo" methodname="Configure_CreatesShadowAndSelectionHalo" classname="PieceVisualTests" runstate="Runnable" seed="169493816" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.002915" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1074" name="SetSelected_TogglesHaloAndScale" fullname="PieceVisualTests.SetSelected_TogglesHaloAndScale" methodname="SetSelected_TogglesHaloAndScale" classname="PieceVisualTests" runstate="Runnable" seed="2001813616" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.002268" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1075" name="PolishMotionTests" fullname="PolishMotionTests" classname="PolishMotionTests" runstate="Runnable" testcasecount="10" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.001800" total="10" passed="10" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1077" name="EaseInOutCubic_ClampsEndpoints" fullname="PolishMotionTests.EaseInOutCubic_ClampsEndpoints" methodname="EaseInOutCubic_ClampsEndpoints" classname="PolishMotionTests" runstate="Runnable" seed="316776020" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000371" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1076" name="EaseOutBack_ClampsEndpoints" fullname="PolishMotionTests.EaseOutBack_ClampsEndpoints" methodname="EaseOutBack_ClampsEndpoints" classname="PolishMotionTests" runstate="Runnable" seed="1482898699" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000057" asserts="0">
+          <properties />
+        </test-case>
+        <test-case id="1078" name="FallDuration_GrowsWithDistanceAndStaysBounded" fullname="PolishMotionTests.FallDuration_GrowsWithDistanceAndStaysBounded" methodname="FallDuration_GrowsWithDistanceAndStaysBounded" classname="PolishMotionTests" runstate="Runnable" seed="224370189" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000247" asserts="0">
+          <properties />
+        </test-case>
+        <test-suite type="ParameterizedMethod" id="1086" name="IsColorMatchable_OnlyNormalElements" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000591" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-case id="1080" name="IsColorMatchable_OnlyNormalElements(Red,True)" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements(Red,True)" methodname="IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" seed="1629073485" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000116" asserts="0">
+            <properties />
+          </test-case>
+          <test-case id="1081" name="IsColorMatchable_OnlyNormalElements(Blue,True)" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements(Blue,True)" methodname="IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" seed="183949310" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000024" asserts="0">
+            <properties />
+          </test-case>
+          <test-case id="1082" name="IsColorMatchable_OnlyNormalElements(Yellow,True)" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements(Yellow,True)" methodname="IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" seed="1004204919" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000022" asserts="0">
+            <properties />
+          </test-case>
+          <test-case id="1083" name="IsColorMatchable_OnlyNormalElements(Green,True)" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements(Green,True)" methodname="IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" seed="1106251132" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000024" asserts="0">
+            <properties />
+          </test-case>
+          <test-case id="1084" name="IsColorMatchable_OnlyNormalElements(Suitcase,False)" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements(Suitcase,False)" methodname="IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" seed="1040528905" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000024" asserts="0">
+            <properties />
+          </test-case>
+          <test-case id="1085" name="IsColorMatchable_OnlyNormalElements(Empty,False)" fullname="PolishMotionTests.IsColorMatchable_OnlyNormalElements(Empty,False)" methodname="IsColorMatchable_OnlyNormalElements" classname="PolishMotionTests" runstate="Runnable" seed="53833523" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000021" asserts="0">
+            <properties />
+          </test-case>
+        </test-suite>
+        <test-case id="1079" name="SwapTiming_IsSnappy" fullname="PolishMotionTests.SwapTiming_IsSnappy" methodname="SwapTiming_IsSnappy" classname="PolishMotionTests" runstate="Runnable" seed="584573871" result="Passed" start-time="2026-06-28 14:10:39Z" end-time="2026-06-28 14:10:39Z" duration="0.000044" asserts="0">
+          <properties />
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
