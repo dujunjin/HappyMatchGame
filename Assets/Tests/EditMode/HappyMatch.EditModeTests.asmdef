@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "HappyMatchGame",
+        "Unity.TextMeshPro",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

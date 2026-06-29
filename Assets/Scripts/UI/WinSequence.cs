@@ -11,10 +11,9 @@ using TMPro;
 ///   1. Board exit (0.45s scale-down + fade + slide down).
 ///   2. "Great" text appearing with a 0.24s elastic (back-out) curve, and a
 ///      background brighten.
-///   3. Treasure chest opening in four sub-phases:
-///        a. Seal-break: lid lifts to 70° with a golden light beam leaking
-///           from the crack, body tremor, gold sparks; a brief stutter
-///           (resistance), then a snap open + a soft gold shockwave ring.
+///   3. Provided orange suitcase celebration in four sub-phases:
+///        a. Anticipation: the suitcase squashes, wobbles and releases a
+///           golden light beam, sparks and a soft shockwave ring.
 ///        b. Bloom: 3-5 chrysanthemum fireworks shoot up and burst (main
 ///           rays + secondary star points), and 6-10 ribbons spiral out on
 ///           sine-wave paths with decaying spin/velocity.
@@ -23,22 +22,20 @@ using TMPro;
 ///        d. Aftermath: chest glow dims to a faint pulse; effects fade.
 ///   4. Retry / Replay buttons. Replay re-runs the finale; Retry reloads.
 /// Lose still uses the simple ResultDialog (this sequence is win-only).
-/// The chest uses five authored 2D poses with a procedural fallback; effects
-/// and sound remain runtime-driven so the sequence is portable to builds.
+/// The main prop uses the user-provided suitcase with a procedural fallback;
+/// effects and sound remain runtime-driven so the sequence is portable.
 /// </summary>
 public class WinSequence : MonoBehaviour
 {
+    public const string VictoryPropResourcePath = HappyMatchAssetCatalog.SuitcasePath;
+
     private GameManager _gm;
     private Canvas _canvas;
     private readonly List<GameObject> _spawned = new List<GameObject>();
 
     private Transform _chestVisual;
     private SpriteRenderer _chestGlow;
-    private SpriteRenderer _closedChestFrame;
-    private SpriteRenderer _crackedChestFrame;
-    private SpriteRenderer _ajarChestFrame;
-    private SpriteRenderer _wideChestFrame;
-    private SpriteRenderer _openChestFrame;
+    private SpriteRenderer _victorySuitcase;
 
     public void Init(GameManager gm) { _gm = gm; }
 
@@ -131,6 +128,7 @@ public class WinSequence : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = new Color(1f, 0.85f, 0.2f);
         tmp.fontStyle = FontStyles.Bold;
+        HappyMatchAssetCatalog.ApplyDisplayFont(tmp);
 
         UnityEngine.UI.Outline outline = go.AddComponent<UnityEngine.UI.Outline>();
         outline.effectColor = new Color(0.26f, 0.08f, 0.02f, 0.82f);
@@ -187,12 +185,10 @@ public class WinSequence : MonoBehaviour
         chest.transform.localScale = Vector3.zero;
         _spawned.Add(chest);
 
-        // Pop the authored chest in at its final presentation scale. Each
-        // imported frame shares an identical canvas/pivot, so the body stays
-        // anchored while only the lid pose changes.
+        // Pop the supplied suitcase in before the celebration effects.
         yield return ScaleTo(chest.transform, 1f, 0.25f);
 
-        // Mouth = the stable lid seam shared by all authored frames.
+        // Effect origin sits just above the suitcase center.
         Vector3 mouth = chest.transform.position + new Vector3(0f, 0.05f, 0f);
 
         // Phase 1: seal-break (lid lift + beam + tremor + sparks + snap + shockwave).
@@ -217,7 +213,7 @@ public class WinSequence : MonoBehaviour
 
     private GameObject CreateChest()
     {
-        GameObject root = new GameObject("Chest");
+        GameObject root = new GameObject("VictorySuitcase");
         _chestVisual = root.transform;
 
         // Glow behind the chest (phase 4 pulse).
@@ -231,47 +227,21 @@ public class WinSequence : MonoBehaviour
         glow.transform.localScale = new Vector3(5.4f, 5.4f, 1f);
         _chestGlow = gsr;
 
-        Sprite closed = Resources.Load<Sprite>("VictoryChest/ChestClosed");
-        Sprite cracked = Resources.Load<Sprite>("VictoryChest/ChestCracked");
-        Sprite ajar = Resources.Load<Sprite>("VictoryChest/ChestAjar");
-        Sprite wide = Resources.Load<Sprite>("VictoryChest/ChestWide");
-        Sprite open = Resources.Load<Sprite>("VictoryChest/ChestOpen");
-
-        if (closed == null || cracked == null || ajar == null || wide == null || open == null)
+        Sprite supplied = Resources.Load<Sprite>(VictoryPropResourcePath);
+        if (supplied == null)
         {
-            Debug.LogWarning("[WinSequence] Victory chest sprites are incomplete; using procedural fallback frames.");
-            Sprite fallback = SpriteGenerator.CreateSuitcaseSprite(new Color(0.72f, 0.33f, 0.11f));
-            closed = closed != null ? closed : fallback;
-            cracked = cracked != null ? cracked : fallback;
-            ajar = ajar != null ? ajar : fallback;
-            wide = wide != null ? wide : fallback;
-            open = open != null ? open : fallback;
+            Debug.LogWarning("[WinSequence] Provided suitcase is missing; using the procedural fallback.");
+            supplied = SpriteGenerator.CreateSuitcaseSprite(new Color(0.92f, 0.42f, 0.08f));
         }
 
-        // Per-frame scale/offset values align the body baseline and width. The
-        // lid changes pose while the lower chest reads as one stationary prop.
-        _closedChestFrame = CreateChestFrame(root.transform, "Closed", closed, 1f, 0.269f, -0.135f);
-        _crackedChestFrame = CreateChestFrame(root.transform, "Cracked", cracked, 0f, 0.338f, -0.328f);
-        _ajarChestFrame = CreateChestFrame(root.transform, "Ajar", ajar, 0f, 0.280f, 0f);
-        _wideChestFrame = CreateChestFrame(root.transform, "Wide", wide, 0f, 0.363f, 0.107f);
-        _openChestFrame = CreateChestFrame(root.transform, "Open", open, 0f, 0.280f, 0f);
+        GameObject suitcase = new GameObject("ProvidedSuitcase");
+        suitcase.transform.SetParent(root.transform, false);
+        suitcase.transform.localScale = Vector3.one * 4.4f;
+        _victorySuitcase = suitcase.AddComponent<SpriteRenderer>();
+        _victorySuitcase.sprite = supplied;
+        _victorySuitcase.sortingOrder = 51;
 
         return root;
-    }
-
-    private SpriteRenderer CreateChestFrame(
-        Transform parent, string name, Sprite sprite, float alpha, float authoredScale, float authoredY)
-    {
-        GameObject frame = new GameObject(name);
-        frame.transform.SetParent(parent, false);
-        bool authored = sprite != null && sprite.rect.width > 256f;
-        frame.transform.localScale = authored ? Vector3.one * authoredScale : Vector3.one * 5.2f;
-        frame.transform.localPosition = authored ? Vector3.up * authoredY : Vector3.zero;
-        SpriteRenderer renderer = frame.AddComponent<SpriteRenderer>();
-        renderer.sprite = sprite;
-        renderer.sortingOrder = 51;
-        renderer.color = new Color(1f, 1f, 1f, alpha);
-        return renderer;
     }
 
     // --- Phase 1: seal-break (authored rigid-body poses around a rear hinge) ---
@@ -330,11 +300,17 @@ public class WinSequence : MonoBehaviour
 
     private void SetChestFrameWeights(VictoryChestMotion.Weights weights)
     {
-        if (_closedChestFrame != null) _closedChestFrame.color = new Color(1f, 1f, 1f, weights.closed);
-        if (_crackedChestFrame != null) _crackedChestFrame.color = new Color(1f, 1f, 1f, weights.cracked);
-        if (_ajarChestFrame != null) _ajarChestFrame.color = new Color(1f, 1f, 1f, weights.ajar);
-        if (_wideChestFrame != null) _wideChestFrame.color = new Color(1f, 1f, 1f, weights.wide);
-        if (_openChestFrame != null) _openChestFrame.color = new Color(1f, 1f, 1f, weights.open);
+        if (_victorySuitcase == null) return;
+        float progress = Mathf.Clamp01(
+            weights.cracked * 0.18f + weights.ajar * 0.42f + weights.wide * 0.72f + weights.open);
+        float pulse = Mathf.Sin(progress * Mathf.PI);
+        _victorySuitcase.transform.localScale = new Vector3(
+            4.4f * (1f + pulse * 0.11f),
+            4.4f * (1f - pulse * 0.08f),
+            1f);
+        _victorySuitcase.transform.localRotation = Quaternion.Euler(
+            0f, 0f, Mathf.Sin(progress * Mathf.PI * 4f) * (1f - progress) * 8f);
+        _victorySuitcase.color = Color.white;
     }
 
     private IEnumerator Spark(Vector3 origin)
@@ -718,6 +694,7 @@ public class WinSequence : MonoBehaviour
         tmp.fontSize = 18;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
+        HappyMatchAssetCatalog.ApplyDisplayFont(tmp);
 
         button.onClick.AddListener(() => onClick());
         _spawned.Add(btn);
@@ -757,11 +734,7 @@ public class WinSequence : MonoBehaviour
         _spawned.Clear();
         _chestVisual = null;
         _chestGlow = null;
-        _closedChestFrame = null;
-        _crackedChestFrame = null;
-        _ajarChestFrame = null;
-        _wideChestFrame = null;
-        _openChestFrame = null;
+        _victorySuitcase = null;
         CreateCanvas();
     }
 

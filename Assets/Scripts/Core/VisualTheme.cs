@@ -77,18 +77,19 @@ public class VisualTheme : ScriptableObject
     /// </summary>
     public Sprite GetElementSprite(ElementType type)
     {
+        Sprite provided = HappyMatchAssetCatalog.GetElementSprite(type);
         switch (type)
         {
             case ElementType.Red:
-                return spriteRed ?? (_redShape ?? (_redShape = SpriteGenerator.CreateStockingSprite(colorRed)));
+                return spriteRed ?? provided ?? (_redShape ?? (_redShape = SpriteGenerator.CreateStockingSprite(colorRed)));
             case ElementType.Blue:
-                return spriteBlue ?? (_blueShape ?? (_blueShape = SpriteGenerator.CreateSnowflakeSprite(colorBlue)));
+                return spriteBlue ?? provided ?? (_blueShape ?? (_blueShape = SpriteGenerator.CreateSnowflakeSprite(colorBlue)));
             case ElementType.Yellow:
-                return spriteYellow ?? (_yellowShape ?? (_yellowShape = SpriteGenerator.CreateStarSprite(colorYellow)));
+                return spriteYellow ?? provided ?? (_yellowShape ?? (_yellowShape = SpriteGenerator.CreateStarSprite(colorYellow)));
             case ElementType.Green:
-                return spriteGreen ?? (_greenShape ?? (_greenShape = SpriteGenerator.CreateTreeSprite(colorGreen)));
+                return spriteGreen ?? provided ?? (_greenShape ?? (_greenShape = SpriteGenerator.CreateTreeSprite(colorGreen)));
             case ElementType.Suitcase:
-                return spriteSuitcase ?? (_suitcaseCache ?? (_suitcaseCache = SpriteGenerator.CreateSuitcaseSprite(colorSuitcase)));
+                return spriteSuitcase ?? provided ?? (_suitcaseCache ?? (_suitcaseCache = SpriteGenerator.CreateSuitcaseSprite(colorSuitcase)));
             default:
                 return GetCachedCircle(Color.white);
         }
@@ -97,6 +98,8 @@ public class VisualTheme : ScriptableObject
     public Sprite GetRocketSprite(ElementType type)
     {
         if (spriteRocket != null) return spriteRocket;
+        Sprite provided = HappyMatchAssetCatalog.GetSpecialSprite(GameConfig.SpecialType.Rocket);
+        if (provided != null) return provided;
         Color c = GetColorForType(type);
         if (!_rocketCache.ContainsKey(c))
             _rocketCache[c] = SpriteGenerator.CreateRocketSprite(c);
@@ -106,6 +109,8 @@ public class VisualTheme : ScriptableObject
     public Sprite GetBombSprite(ElementType type)
     {
         if (spriteBomb != null) return spriteBomb;
+        Sprite provided = HappyMatchAssetCatalog.GetSpecialSprite(GameConfig.SpecialType.Bomb);
+        if (provided != null) return provided;
         Color c = GetColorForType(type);
         if (!_bombCache.ContainsKey(c))
             _bombCache[c] = SpriteGenerator.CreateBombSprite(c);
@@ -115,6 +120,8 @@ public class VisualTheme : ScriptableObject
     public Sprite GetPropellerSprite(ElementType type)
     {
         if (spritePropeller != null) return spritePropeller;
+        Sprite provided = HappyMatchAssetCatalog.GetSpecialSprite(GameConfig.SpecialType.Propeller);
+        if (provided != null) return provided;
         Color c = GetColorForType(type);
         if (!_propellerCache.ContainsKey(c))
             _propellerCache[c] = SpriteGenerator.CreatePropellerSprite(c);

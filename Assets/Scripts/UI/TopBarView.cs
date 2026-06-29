@@ -24,10 +24,12 @@ public class TopBarView : MonoBehaviour
     private RectTransform _targetPill;
     private Image _targetPillImage;
     private readonly Color _targetPillColor = new Color(1f, 0.86f, 0.63f, 0.96f);
+    private Color _targetPillBaseColor;
 
     public void Init(GameManager gameManager)
     {
         _gameManager = gameManager;
+        if (giftIconSprite == null) giftIconSprite = HappyMatchAssetCatalog.Suitcase;
         if (GetComponentInParent<Canvas>() == null)
             CreateUI();
     }
@@ -82,18 +84,22 @@ public class TopBarView : MonoBehaviour
 
     private void CreateTargetPill(Transform parent)
     {
-        Sprite pillSprite = GlassPanelTexture.CreateRoundedRect(256, 96, 42f, Color.white);
+        Sprite pillSprite = HappyMatchAssetCatalog.TargetPanel;
+        bool usesProvidedPanel = pillSprite != null;
+        if (pillSprite == null)
+            pillSprite = GlassPanelTexture.CreateRoundedRect(256, 96, 42f, Color.white);
         GameObject pill = new GameObject("TargetPill");
         pill.transform.SetParent(parent, false);
         _targetPill = pill.AddComponent<RectTransform>();
         _targetPill.anchorMin = _targetPill.anchorMax = new Vector2(0f, 0.5f);
         _targetPill.pivot = new Vector2(0f, 0.5f);
         _targetPill.anchoredPosition = new Vector2(10f, 0f);
-        _targetPill.sizeDelta = new Vector2(154f, 48f);
+        _targetPill.sizeDelta = new Vector2(166f, 50f);
         _targetPillImage = pill.AddComponent<Image>();
         _targetPillImage.sprite = pillSprite;
-        _targetPillImage.type = Image.Type.Sliced;
-        _targetPillImage.color = _targetPillColor;
+        _targetPillImage.type = usesProvidedPanel ? Image.Type.Simple : Image.Type.Sliced;
+        _targetPillImage.color = usesProvidedPanel ? Color.white : _targetPillColor;
+        _targetPillBaseColor = _targetPillImage.color;
         _targetPillImage.raycastTarget = false;
 
         GameObject glow = new GameObject("InnerGlow");
@@ -191,6 +197,7 @@ public class TopBarView : MonoBehaviour
         text.alignment = alignment;
         text.color = color;
         text.raycastTarget = false;
+        HappyMatchAssetCatalog.ApplyHudFont(text);
         return text;
     }
 
@@ -230,13 +237,13 @@ public class TopBarView : MonoBehaviour
             float scale = 1f + wave * 0.16f;
             _targetPill.localScale = new Vector3(scale, 1f + wave * 0.10f, 1f);
             if (_targetPillImage != null)
-                _targetPillImage.color = Color.Lerp(_targetPillColor, new Color(1f, 0.96f, 0.72f, 1f), wave);
+                _targetPillImage.color = Color.Lerp(_targetPillBaseColor, new Color(1f, 0.96f, 0.72f, 1f), wave);
             if (targetText != null)
                 targetText.color = Color.Lerp(baseTextColor, new Color(0.60f, 0.20f, 0.04f, 1f), wave);
             yield return null;
         }
         _targetPill.localScale = Vector3.one;
-        if (_targetPillImage != null) _targetPillImage.color = _targetPillColor;
+        if (_targetPillImage != null) _targetPillImage.color = _targetPillBaseColor;
         if (targetText != null) targetText.color = baseTextColor;
     }
 }

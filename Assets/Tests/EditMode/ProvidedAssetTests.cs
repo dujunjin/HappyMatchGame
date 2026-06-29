@@ -1,5 +1,7 @@
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ProvidedAssetTests
 {
@@ -39,6 +41,45 @@ public class ProvidedAssetTests
         Assert.AreSame(expected, theme.GetElementSprite(ElementType.Red));
 
         Object.DestroyImmediate(theme);
+    }
+
+    [Test]
+    public void Catalog_AppliesProvidedHudFontToTmpText()
+    {
+        GameObject go = new GameObject("HudText");
+        TextMeshProUGUI text = go.AddComponent<TextMeshProUGUI>();
+
+        Assert.IsTrue(HappyMatchAssetCatalog.ApplyHudFont(text));
+        Assert.IsNotNull(text.font);
+        StringAssert.Contains("Passion", text.font.faceInfo.familyName);
+
+        Object.DestroyImmediate(go);
+    }
+
+    [Test]
+    public void TopBar_UsesProvidedTargetPanelAndSuitcaseIcon()
+    {
+        GameObject go = new GameObject("TopBarTest");
+        TopBarView view = go.AddComponent<TopBarView>();
+        view.Init(null);
+
+        Image[] images = go.GetComponentsInChildren<Image>(true);
+        Image pill = System.Array.Find(images, image => image.sprite == HappyMatchAssetCatalog.TargetPanel);
+        Image icon = System.Array.Find(images, image => image.gameObject.name == "TargetIcon");
+
+        Assert.IsNotNull(pill);
+        Assert.AreSame(HappyMatchAssetCatalog.TargetPanel, pill.sprite);
+        Assert.IsNotNull(icon);
+        Assert.AreSame(HappyMatchAssetCatalog.Suitcase, icon.sprite);
+
+        Object.DestroyImmediate(go);
+    }
+
+    [Test]
+    public void WinSequence_UsesProvidedSuitcaseAsVictoryProp()
+    {
+        Assert.AreEqual(HappyMatchAssetCatalog.SuitcasePath, WinSequence.VictoryPropResourcePath);
+        Assert.IsNotNull(Resources.Load<Sprite>(WinSequence.VictoryPropResourcePath));
     }
 
 }

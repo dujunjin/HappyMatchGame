@@ -66,6 +66,7 @@ public class ResultDialog : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = won ? Color.green : Color.red;
         tmp.text = won ? "You Win!" : "Game Over";
+        HappyMatchAssetCatalog.ApplyDisplayFont(tmp);
 
         // Sub text
         GameObject subGO = new GameObject("SubText");
@@ -83,6 +84,7 @@ public class ResultDialog : MonoBehaviour
         subTmp.text = won
             ? $"All suitcases cleared!"
             : $"Out of steps!\nSuitcases left: {_gameManager.RemainingSuitcases}";
+        HappyMatchAssetCatalog.ApplyHudFont(subTmp);
 
         // Restart button
         GameObject btnGO = new GameObject("RestartButton");
@@ -108,6 +110,7 @@ public class ResultDialog : MonoBehaviour
         btnTmp.alignment = TextAlignmentOptions.Center;
         btnTmp.color = Color.white;
         btnTmp.text = "Restart";
+        HappyMatchAssetCatalog.ApplyDisplayFont(btnTmp);
 
         btn.onClick.AddListener(() =>
         {
