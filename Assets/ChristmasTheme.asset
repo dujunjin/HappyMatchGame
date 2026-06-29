@@ -19,11 +19,11 @@ MonoBehaviour:
   colorSuitcase: {r: 0.9, g: 0.6, b: 0.1, a: 1}
   boardCellColor: {r: 1, g: 1, b: 1, a: 0.08}
   backgroundColor: {r: 0.025, g: 0.075, b: 0.16, a: 1}
-  spriteRed: {fileID: 21300000, guid: 5440b9abdcfee4a259ac171f24f71953, type: 3}
-  spriteBlue: {fileID: 21300000, guid: ecddacfc8932d4d6681a3dc7e383a2ba, type: 3}
-  spriteYellow: {fileID: 21300000, guid: f217eb283098448119aad11a815bd897, type: 3}
-  spriteGreen: {fileID: 21300000, guid: 94413ab2bea5d43249468cdc52ad3351, type: 3}
-  spriteSuitcase: {fileID: 21300000, guid: 5479d3c9c52a940cd94431797e74940b, type: 3}
-  spriteRocket: {fileID: 21300000, guid: 8a5ebeb4a518240d0b042ececcf1b06b, type: 3}
-  spriteBomb: {fileID: 21300000, guid: 9100794ea862b46148c1d51cfb4438f3, type: 3}
-  spritePropeller: {fileID: 21300000, guid: a844fe877a2074ecea551b08bff85114, type: 3}
+  spriteRed: {fileID: 21300000, guid: b8f214d8f494f450faeb833902027487, type: 3}
+  spriteBlue: {fileID: 21300000, guid: 6904bda51dda145ed856971742c9f8e3, type: 3}
+  spriteYellow: {fileID: 21300000, guid: 7daf090b7968f4d42ad92b067b5e9052, type: 3}
+  spriteGreen: {fileID: 21300000, guid: d3c73f282f8334300bca7cffc273499b, type: 3}
+  spriteSuitcase: {fileID: 21300000, guid: 5a43d2e25898d489780fbe23af44ae7c, type: 3}
+  spriteRocket: {fileID: 21300000, guid: 9b0a37a4cf0ce492b8a85d71dac93ac0, type: 3}
+  spriteBomb: {fileID: 21300000, guid: 65857441cf43d49fdb6938ec22e52102, type: 3}
+  spritePropeller: {fileID: 21300000, guid: b2dae6445b24f424daf52411610b5a31, type: 3}

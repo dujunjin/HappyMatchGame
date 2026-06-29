@@ -29,7 +29,8 @@ public class TopBarView : MonoBehaviour
     public void Init(GameManager gameManager)
     {
         _gameManager = gameManager;
-        if (giftIconSprite == null) giftIconSprite = HappyMatchAssetCatalog.Suitcase;
+        Sprite providedSuitcase = HappyMatchAssetCatalog.Suitcase;
+        if (providedSuitcase != null) giftIconSprite = providedSuitcase;
         if (GetComponentInParent<Canvas>() == null)
             CreateUI();
     }

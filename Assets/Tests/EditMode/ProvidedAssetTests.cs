@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using TMPro;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -61,6 +62,7 @@ public class ProvidedAssetTests
     {
         GameObject go = new GameObject("TopBarTest");
         TopBarView view = go.AddComponent<TopBarView>();
+        view.giftIconSprite = SpriteGenerator.CreateSuitcaseSprite(Color.magenta);
         view.Init(null);
 
         Image[] images = go.GetComponentsInChildren<Image>(true);
@@ -73,6 +75,22 @@ public class ProvidedAssetTests
         Assert.AreSame(HappyMatchAssetCatalog.Suitcase, icon.sprite);
 
         Object.DestroyImmediate(go);
+    }
+
+    [Test]
+    public void SceneTheme_ReferencesEveryProvidedGameplaySprite()
+    {
+        VisualTheme theme = AssetDatabase.LoadAssetAtPath<VisualTheme>("Assets/ChristmasTheme.asset");
+
+        Assert.IsNotNull(theme);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.RedPath), theme.spriteRed);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.YellowPath), theme.spriteYellow);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.BluePath), theme.spriteBlue);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.GreenPath), theme.spriteGreen);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.SuitcasePath), theme.spriteSuitcase);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.RocketPath), theme.spriteRocket);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.BombPath), theme.spriteBomb);
+        Assert.AreSame(Resources.Load<Sprite>(HappyMatchAssetCatalog.PropellerPath), theme.spritePropeller);
     }
 
     [Test]
